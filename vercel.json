@@ -1,19 +1,5 @@
 {
-  "version": 2,
-  "buildCommand": "npm install",
-  "env": {
-    "RESEND_API_KEY": "@resend_api_key",
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key"
-  },
-  "functions": {
-    "api/send-otp.js": {
-      "memory": 128,
-      "maxDuration": 10
-    },
-    "api/verify-otp.js": {
-      "memory": 128,
-      "maxDuration": 5
-    }
-  }
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
