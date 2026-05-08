@@ -1099,8 +1099,27 @@ function doSignup(){
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
   const code=randCode();
   state.pendingUser={name,email,dob,country,city};state.pendingCode=code;
+  
+  // Send verification code via serverless function
+  try{
+    const response=await fetch('/api/send-verification-code',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,code})
+    });
+    const result=await response.json();
+    if(!response.ok){
+      err('signup-err','Failed to send verification code. Please try again.');
+      return;
+    }
+  }catch(e){
+    console.error('Error sending verification code:',e);
+    err('signup-err','Failed to send verification code. Please try again.');
+    return;
+  }
+  
   buildOTP('otp-inputs');
-  setEl('verify-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
+  setEl('verify-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.</div>');
   show('s-verify-signup');
 }
 async function doVerifySignup(){
@@ -1156,14 +1175,32 @@ async function doLogin(){
       return;
     }
     
-    // User found, store for verification and show code input
+    // User found, store for verification and send code via serverless function
     const code=randCode();
     state.pendingCode=code;
     state.pendingUser={email};
     state.db[email]=data; // Cache their data locally
     
+    // Send verification code via serverless function
+    try{
+      const response=await fetch('/api/send-verification-code',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email,code})
+      });
+      const result=await response.json();
+      if(!response.ok){
+        err('login-err','Failed to send verification code. Please try again.');
+        return;
+      }
+    }catch(e){
+      console.error('Error sending verification code:',e);
+      err('login-err','Failed to send verification code. Please try again.');
+      return;
+    }
+    
     buildOTP('otp-login-inputs');
-    setEl('verify-login-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
+    setEl('verify-login-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.</div>');
     show('s-verify-login');
   }catch(e){
     err('login-err','Could not find account. Please try again.');
