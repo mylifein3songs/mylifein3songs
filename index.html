@@ -978,7 +978,7 @@ async function saveDB(){
         songs:user.songs,
         notes:user.notes,
         views:user.views,
-        last_login:new Date(user.lastLogin).toISOString()
+        last_login:new Date().toISOString()
       }).eq('email',state.currentUser);
       
       if(error){
