@@ -1097,30 +1097,10 @@ function doSignup(){
   const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
   if(age<13){err('signup-err','You must be at least 13 years old to register. Please see our Terms of Service.');return;}
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
-  state.pendingUser={name,email,dob,country,city};
-  
-  // Send verification code via serverless function (server generates the code)
-  try{
-    const response=await fetch('/api/send-otp',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({email,type:'signup'})
-    });
-    const result=await response.json();
-    if(!response.ok){
-      err('signup-err','Failed to send verification code. Please try again.');
-      return;
-    }
-    // Store the code received from server
-    state.pendingCode=result.code;
-  }catch(e){
-    console.error('Error sending verification code:',e);
-    err('signup-err','Failed to send verification code. Please try again.');
-    return;
-  }
-  
+  const code=randCode();
+  state.pendingUser={name,email,dob,country,city};state.pendingCode=code;
   buildOTP('otp-inputs');
-  setEl('verify-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.</div>');
+  setEl('verify-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
   show('s-verify-signup');
 }
 async function doVerifySignup(){
@@ -1176,32 +1156,14 @@ async function doLogin(){
       return;
     }
     
-    // User found, store for verification and send code via serverless function
+    // User found, store for verification and show code input
+    const code=randCode();
+    state.pendingCode=code;
     state.pendingUser={email};
     state.db[email]=data; // Cache their data locally
     
-    // Send verification code via serverless function (server generates the code)
-    try{
-      const response=await fetch('/api/send-otp',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({email,type:'login'})
-      });
-      const result=await response.json();
-      if(!response.ok){
-        err('login-err','Failed to send verification code. Please try again.');
-        return;
-      }
-      // Store the code received from server
-      state.pendingCode=result.code;
-    }catch(e){
-      console.error('Error sending verification code:',e);
-      err('login-err','Failed to send verification code. Please try again.');
-      return;
-    }
-    
     buildOTP('otp-login-inputs');
-    setEl('verify-login-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.</div>');
+    setEl('verify-login-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
     show('s-verify-login');
   }catch(e){
     err('login-err','Could not find account. Please try again.');
@@ -1321,31 +1283,13 @@ function saveDetails(){
   const emailChanged=newEmail!==state.currentUser;
   if(emailChanged){
     if(state.db[newEmail]){err('edit-details-err','That email address is already registered to another account.');return;}
-    // Send verification code via serverless function
-    (async()=>{
-      try{
-        const response=await fetch('/api/send-otp',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({email:newEmail,type:'email-change'})
-        });
-        const result=await response.json();
-        if(!response.ok){
-          err('edit-details-err','Failed to send verification code. Please try again.');
-          return;
-        }
-        // Store the code and pending details
-        pendingEmailChange={newEmail,code:result.code,pendingDetails:{name,dob,country,city}};
-        buildOTP('otp-email-inputs');
-        setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>.</div>');
-        clearErr('email-verify-err');
-        document.getElementById('edit-details-box').style.display='none';
-        document.getElementById('email-verify-box').style.display='block';
-      }catch(e){
-        console.error('Error sending email change code:',e);
-        err('edit-details-err','Failed to send verification code. Please try again.');
-      }
-    })();
+    const code=randCode();
+    pendingEmailChange={newEmail,code,pendingDetails:{name,dob,country,city}};
+    buildOTP('otp-email-inputs');
+    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
+    clearErr('email-verify-err');
+    document.getElementById('edit-details-box').style.display='none';
+    document.getElementById('email-verify-box').style.display='block';
     return;
   }
   applyDetailsSave({name,dob,country,city},null);
