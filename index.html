@@ -1030,7 +1030,6 @@ function show(id){
     history.replaceState(null,'',path);
   }catch(e){}
 }
-function randCode(){return String(Math.floor(100000+Math.random()*900000));}
 function setEl(id,html){document.getElementById(id).innerHTML=html;}
 function err(id,msg){setEl(id,'<div class="msg error">'+msg+'</div>');}
 function clearErr(id){setEl(id,'');}
@@ -1085,7 +1084,7 @@ document.addEventListener('click',function(e){
 });
 
 // ── Auth ───────────────────────────────────────────────────────────────
-function doSignup(){
+async function doSignup(){
   clearErr('signup-err');
   const name=document.getElementById('su-name').value.trim();
   const email=document.getElementById('su-email').value.trim().toLowerCase();
@@ -1097,55 +1096,109 @@ function doSignup(){
   const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
   if(age<13){err('signup-err','You must be at least 13 years old to register. Please see our Terms of Service.');return;}
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
-  const code=randCode();
-  state.pendingUser={name,email,dob,country,city};state.pendingCode=code;
-  buildOTP('otp-inputs');
-  setEl('verify-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
-  show('s-verify-signup');
-}
-async function doVerifySignup(){
-  clearErr('verify-err');
-  if(getOTP('otp-inputs')!==state.pendingCode){err('verify-err','Incorrect code. Please try again.');return;}
   
-  const u=state.pendingUser;
-  const newUser={
-    email:u.email,
-    name:u.name,
-    dob:u.dob,
-    country:u.country,
-    city:u.city,
-    songs:null,
-    notes:'',
-    views:0,
-    last_login:new Date().toISOString()
-  };
+  state.pendingUser={name,email,dob,country,city};
   
-  try{
-    // Insert new user into Supabase
-    const {data,error}=await window.supabase_client.from('users').insert([newUser]);
-    if(error){
-      err('verify-err','Could not create account. Please try again.');
-      console.error('Signup error:',error);
+  try {
+    const sendBtn = document.querySelector('button[onclick="doSignup()"]');
+    const originalText = sendBtn.textContent;
+    sendBtn.disabled = true;
+    sendBtn.textContent = 'Sending...';
+    
+    const response = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    
+    sendBtn.disabled = false;
+    sendBtn.textContent = originalText;
+    
+    if (!response.ok) {
+      const data = await response.json();
+      err('signup-err', data.error || 'Failed to send code. Please try again.');
       return;
     }
     
-    // Success — set session and local state
-    state.db[u.email]=newUser;
-    state.currentUser=u.email;
-    state.pendingUser=null;
-    state.pendingCode=null;
-    sessionStorage.setItem('tsoyu_session_email',u.email);
+    buildOTP('otp-inputs');
+    setEl('verify-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code.</div>');
+    show('s-verify-signup');
+  } catch (e) {
+    err('signup-err', 'An error occurred. Please try again.');
+    console.error('Send OTP error:', e);
+  }
+}
+async function doVerifySignup(){
+  clearErr('verify-err');
+  const email = state.pendingUser.email;
+  const code = getOTP('otp-inputs');
+  
+  if (!code || code.length !== 6) {
+    err('verify-err', 'Please enter all 6 digits');
+    return;
+  }
+  
+  try {
+    const verifyBtn = document.querySelector('button[onclick="doVerifySignup()"]');
+    const originalText = verifyBtn.textContent;
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
     
-    initPickScreen(false);show('s-pick');
-  }catch(e){
-    err('verify-err','Could not create account. Please try again.');
-    console.error('Signup exception:',e);
+    const response = await fetch('/api/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+    
+    verifyBtn.disabled = false;
+    verifyBtn.textContent = originalText;
+    
+    if (!response.ok) {
+      const data = await response.json();
+      err('verify-err', data.error || 'Verification failed. Please try again.');
+      return;
+    }
+    
+    const result = await response.json();
+    
+    // Store session token for future logins
+    localStorage.setItem('sessionToken', result.token);
+    
+    // Create user object from the API response
+    const u = state.pendingUser;
+    const newUser = {
+      email: u.email,
+      name: u.name,
+      dob: u.dob,
+      country: u.country,
+      city: u.city,
+      songs: null,
+      notes: '',
+      views: 0,
+      last_login: new Date().toISOString()
+    };
+    
+    // Set session and local state
+    state.db[u.email] = newUser;
+    state.currentUser = u.email;
+    state.pendingUser = null;
+    sessionStorage.setItem('tsoyu_session_email', u.email);
+    
+    initPickScreen(false);
+    show('s-pick');
+  } catch (e) {
+    err('verify-err', 'An error occurred. Please try again.');
+    console.error('Verify signup error:', e);
   }
 }
 async function doLogin(){
   clearErr('login-err');
   const email=document.getElementById('li-email').value.trim().toLowerCase();
   if(!email){err('login-err','Please enter your email.');return;}
+  if(!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)){
+    err('login-err','Please enter a valid email address.');
+    return;
+  }
   
   try{
     // Query Supabase to see if email exists
@@ -1156,15 +1209,38 @@ async function doLogin(){
       return;
     }
     
-    // User found, store for verification and show code input
-    const code=randCode();
-    state.pendingCode=code;
+    // User found, prepare for OTP verification
     state.pendingUser={email};
     state.db[email]=data; // Cache their data locally
     
-    buildOTP('otp-login-inputs');
-    setEl('verify-login-hint','<div class="msg info">Code sent to <strong>'+email+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
-    show('s-verify-login');
+    try {
+      const loginBtn = document.querySelector('button[onclick="doLogin()"]');
+      const originalText = loginBtn.textContent;
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Sending...';
+      
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      loginBtn.disabled = false;
+      loginBtn.textContent = originalText;
+      
+      if (!response.ok) {
+        const data = await response.json();
+        err('login-err', data.error || 'Failed to send code. Please try again.');
+        return;
+      }
+      
+      buildOTP('otp-login-inputs');
+      setEl('verify-login-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code.</div>');
+      show('s-verify-login');
+    } catch (e) {
+      err('login-err', 'An error occurred. Please try again.');
+      console.error('Send OTP error:', e);
+    }
   }catch(e){
     err('login-err','Could not find account. Please try again.');
     console.error('Login error:',e);
@@ -1172,11 +1248,40 @@ async function doLogin(){
 }
 async function doVerifyLogin(){
   clearErr('verify-login-err');
-  if(getOTP('otp-login-inputs')!==state.pendingCode){err('verify-login-err','Incorrect code. Please try again.');return;}
+  const email = state.pendingUser.email;
+  const code = getOTP('otp-login-inputs');
   
-  const email=state.pendingUser.email;
+  if (!code || code.length !== 6) {
+    err('verify-login-err', 'Please enter all 6 digits');
+    return;
+  }
   
-  try{
+  try {
+    const verifyBtn = document.querySelector('button[onclick="doVerifyLogin()"]');
+    const originalText = verifyBtn.textContent;
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+    
+    const response = await fetch('/api/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    });
+    
+    verifyBtn.disabled = false;
+    verifyBtn.textContent = originalText;
+    
+    if (!response.ok) {
+      const data = await response.json();
+      err('verify-login-err', data.error || 'Verification failed. Please try again.');
+      return;
+    }
+    
+    const result = await response.json();
+    
+    // Store session token for future logins
+    localStorage.setItem('sessionToken', result.token);
+    
     // Update last_login in Supabase
     const {error}=await window.supabase_client.from('users').update({last_login:new Date().toISOString()}).eq('email',email);
     
@@ -1189,7 +1294,6 @@ async function doVerifyLogin(){
     // Success — set session
     state.currentUser=email;
     state.pendingUser=null;
-    state.pendingCode=null;
     sessionStorage.setItem('tsoyu_session_email',email);
     
     const user=state.db[email];
