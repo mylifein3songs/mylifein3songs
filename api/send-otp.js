@@ -6,13 +6,11 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const resendKey = process.env.RESEND_API_KEY;
 
-if (!supabaseUrl || !supabaseKey || !resendKey) {
-  console.error('Missing environment variables:', {
-    supabaseUrl: !!supabaseUrl,
-    supabaseKey: !!supabaseKey,
-    resendKey: !!resendKey
-  });
-}
+console.log('[send-otp] Initializing with:', {
+  supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
+  supabaseKey: supabaseKey ? 'SET' : 'MISSING',
+  resendKey: resendKey ? 'SET' : 'MISSING'
+});
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 const resend = new Resend(resendKey);
@@ -23,6 +21,8 @@ function generateOTP() {
 }
 
 module.exports = async (req, res) => {
+  console.log('[send-otp] Request received:', { method: req.method, body: req.body });
+  
   // Only POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -36,10 +36,14 @@ module.exports = async (req, res) => {
     }
 
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    
+    console.log('[send-otp] Generated OTP:', { email, code, expiresAt });
 
     // Store OTP in Supabase
-    const { error: insertError } = await supabase
+    console.log('[send-otp] Attempting to insert into otp_codes table...');
+    
+    const { error: insertError, data: insertData } = await supabase
       .from('otp_codes')
       .insert([
         {
@@ -52,12 +56,27 @@ module.exports = async (req, res) => {
       ]);
 
     if (insertError) {
-      console.error('Supabase insert error:', insertError);
-      return res.status(500).json({ error: 'Failed to store OTP' });
+      console.error('[send-otp] SUPABASE INSERT ERROR:', {
+        message: insertError.message,
+        code: insertError.code,
+        details: insertError.details,
+        hint: insertError.hint,
+        status: insertError.status,
+        fullError: JSON.stringify(insertError)
+      });
+      return res.status(500).json({ 
+        error: 'Failed to store OTP',
+        details: insertError.message,
+        code: insertError.code
+      });
     }
+    
+    console.log('[send-otp] OTP stored successfully in Supabase');
 
     // Send email via Resend
-    const { error: emailError } = await resend.emails.send({
+    console.log('[send-otp] Sending email via Resend...');
+    
+    const { error: emailError, data: emailData } = await resend.emails.send({
       from: 'My Life in 3 Songs <hello@mylifein3songs.com>',
       to: email,
       subject: 'Your verification code',
@@ -75,9 +94,11 @@ module.exports = async (req, res) => {
     });
 
     if (emailError) {
-      console.error('Resend email error:', emailError);
-      return res.status(500).json({ error: 'Failed to send email' });
+      console.error('[send-otp] RESEND EMAIL ERROR:', emailError);
+      return res.status(500).json({ error: 'Failed to send email', details: emailError.message });
     }
+    
+    console.log('[send-otp] Email sent successfully');
 
     return res.status(200).json({
       success: true,
@@ -85,7 +106,11 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Unhandled error in send-otp:', error);
+    console.error('[send-otp] UNHANDLED ERROR:', {
+      message: error.message,
+      stack: error.stack,
+      fullError: JSON.stringify(error)
+    });
     return res.status(500).json({
       error: 'A server error occurred',
       details: error.message
