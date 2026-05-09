@@ -15,75 +15,103 @@ module.exports = async (req, res) => {
   try {
     const { email, code, action } = req.body;
 
+    console.log('[verify-otp] Request:', { email, code: code ? 'provided' : 'missing', action });
+
     if (!email || !code) {
       return res.status(400).json({ error: 'Email and code required' });
     }
 
-    console.log('[verify-otp] Verifying:', { email, action });
-
-    // For now, just accept any 6-digit code
-    // In production, you'd validate against a stored code
-    if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
+    // Validate code format (6 digits)
+    if (code.length !== 6 || !/^\d+$/.test(code)) {
       return res.status(400).json({ error: 'Invalid code format' });
     }
 
-    // Check if user exists
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email.toLowerCase())
-      .single();
-
-    let user = userData;
-
-    // If signup action and user doesn't exist, create user
-    if (action === 'signup' && !userData) {
+    // For signup: try to create user if doesn't exist
+    if (action === 'signup') {
+      console.log('[verify-otp] Signup action - creating/updating user');
+      
+      // Try to insert new user
       const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert([
-          {
-            email: email.toLowerCase(),
-            created_at: new Date().toISOString(),
-            last_login: new Date().toISOString()
-          }
-        ])
+        .insert([{ email: email.toLowerCase() }])
         .select()
         .single();
 
       if (insertError) {
-        console.error('[verify-otp] Create user error:', insertError);
-        return res.status(500).json({ error: 'Failed to create user' });
+        console.log('[verify-otp] Insert error (might be duplicate):', insertError.message);
+        // If error is "duplicate key", that's ok - user already exists
+        if (!insertError.message.includes('duplicate') && !insertError.message.includes('Unique')) {
+          console.error('[verify-otp] Real insert error:', insertError.message);
+          return res.status(500).json({ 
+            error: 'Failed to create user',
+            details: insertError.message
+          });
+        }
       }
 
-      user = newUser;
-    } else if (!userData && action !== 'signup') {
-      return res.status(400).json({ error: 'User not found' });
+      const user = newUser || { email: email.toLowerCase() };
+
+      // Create JWT token
+      const token = jwt.sign(
+        { email: email.toLowerCase() },
+        jwtSecret,
+        { expiresIn: '30d' }
+      );
+
+      console.log('[verify-otp] Signup successful for:', email);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Signup successful',
+        token: token,
+        user: {
+          email: email.toLowerCase()
+        }
+      });
     }
 
-    // Update last_login
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('email', email.toLowerCase());
+    // For login: user must exist
+    if (action === 'login') {
+      console.log('[verify-otp] Login action - checking user exists');
+      
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .single();
 
-    // Create JWT token
-    const token = jwt.sign(
-      { email: email.toLowerCase(), userId: user.id },
-      jwtSecret,
-      { expiresIn: '30d' }
-    );
-
-    console.log('[verify-otp] Verification successful for:', email);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Verification successful',
-      token: token,
-      user: {
-        email: user.email,
-        id: user.id
+      if (!userData || userError) {
+        console.log('[verify-otp] User not found:', email);
+        return res.status(400).json({ error: 'User not found' });
       }
-    });
+
+      // Update last_login
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('email', email.toLowerCase());
+
+      // Create JWT token
+      const token = jwt.sign(
+        { email: email.toLowerCase(), userId: userData.id },
+        jwtSecret,
+        { expiresIn: '30d' }
+      );
+
+      console.log('[verify-otp] Login successful for:', email);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        token: token,
+        user: {
+          email: userData.email,
+          id: userData.id
+        }
+      });
+    }
+
+    return res.status(400).json({ error: 'Invalid action' });
 
   } catch (error) {
     console.error('[verify-otp] Error:', error.message);
