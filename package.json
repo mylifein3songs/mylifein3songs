@@ -2,18 +2,9 @@
   "name": "mylifein3songs",
   "version": "1.0.0",
   "description": "Record the three songs you want played at your funeral",
-  "main": "index.html",
-  "type": "module",
-  "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'Static site, no build needed'"
-  },
   "dependencies": {
     "@supabase/supabase-js": "^2.47.0",
-    "resend": "^2.0.0"
-  },
-  "devDependencies": {},
-  "engines": {
-    "node": "18.x"
+    "resend": "^2.0.0",
+    "jsonwebtoken": "^9.1.2"
   }
 }
