@@ -1,24 +1,22 @@
 /**
- * Vercel Serverless Function: /api/verify-otp
+ * Vercel Serverless Function: /api/send-otp
  * 
- * Receives an email and OTP code, verifies it against the otp_codes table,
- * creates/updates the user in the users table, generates a session token,
- * and returns authentication details.
+ * Receives an email address, generates a 6-digit OTP, stores it in Supabase
+ * with a 10-minute expiry, and sends it via Resend email service.
  * 
- * Called by: doVerifyCode(), doVerifyLogin(), email verification flows
+ * Called by: doSignup(), doLogin(), email change flow
  */
 
 import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+import { Resend } from 'resend';
 
-// Initialize Supabase client
+// Initialize clients
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// JWT secret must be set in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
   // CORS preflight
@@ -34,153 +32,70 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Extract email and code from query params (GET) or body (POST)
+  // Extract email from query params (GET) or body (POST)
   const email = 
     (req.method === 'GET' ? req.query.email : req.body?.email) || '';
-  const code = 
-    (req.method === 'GET' ? req.query.code : req.body?.code) || '';
 
-  // Validate inputs
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Missing email or code' });
-  }
-
-  if (!isValidEmail(email) || code.length !== 6 || !/^\d{6}$/.test(code)) {
-    return res.status(400).json({ error: 'Invalid email or code format' });
+  // Validate email format
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
   }
 
   try {
+    // Generate a random 6-digit code
+    const code = generateOTPCode();
+
+    // Calculate expiry time (10 minutes from now)
     const now = new Date();
+    const expiryTime = new Date(now.getTime() + 10 * 60 * 1000);
 
-    // Query Supabase for matching OTP code
-    const { data: otpRecords, error: queryError } = await supabase
+    // Store in Supabase otp_codes table
+    const { error: storeError } = await supabase
       .from('otp_codes')
-      .select('*')
-      .eq('email', email.toLowerCase())
-      .eq('code', code)
-      .eq('used', false)
-      .gt('expires_at', now.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .insert({
+        email: email.toLowerCase(),
+        code,
+        created_at: now.toISOString(),
+        expires_at: expiryTime.toISOString(),
+        used: false,
+      });
 
-    if (queryError) {
-      console.error('OTP query error:', queryError);
-      return res.status(500).json({ error: 'Verification failed' });
-    }
-
-    // If no valid OTP found
-    if (!otpRecords || otpRecords.length === 0) {
-      return res.status(401).json({ 
-        error: 'Invalid or expired code. Please request a new one.' 
+    if (storeError) {
+      console.error('Supabase insert error:', storeError);
+      return res.status(500).json({ 
+        error: 'Failed to generate verification code. Please try again.' 
       });
     }
 
-    const otpRecord = otpRecords[0];
-
-    // Mark OTP as used (prevent replay attacks)
-    const { error: markError } = await supabase
-      .from('otp_codes')
-      .update({ used: true })
-      .eq('id', otpRecord.id);
-
-    if (markError) {
-      console.error('Error marking OTP as used:', markError);
-      // Don't fail here; token generation is more important
-    }
-
-    // Check if user exists
-    const { data: existingUser, error: selectError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email.toLowerCase())
-      .single();
-
-    // Note: .single() throws error if no row found, which is expected
-    let user = existingUser;
-
-    // If user doesn't exist, create a stub account
-    if (!existingUser) {
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          email: email.toLowerCase(),
-          name: '',
-          dob: null,
-          country: null,
-          city: null,
-          songs: null,
-          notes: '',
-          views: 0,
-          created_at: now.toISOString(),
-          last_login: now.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        console.error('Error creating user:', createError);
-        return res.status(500).json({ error: 'Failed to create account' });
-      }
-
-      user = newUser;
-    } else {
-      // Update last_login for existing user
-      await supabase
-        .from('users')
-        .update({ last_login: now.toISOString() })
-        .eq('email', email.toLowerCase());
-    }
-
-    // Generate session token (JWT)
-    const expiresIn = 24 * 60 * 60; // 24 hours
-    const sessionToken = jwt.sign(
-      {
-        email: email.toLowerCase(),
-        userId: user.id,
-        type: 'session',
-      },
-      JWT_SECRET,
-      { expiresIn }
-    );
-
-    const expiresAt = new Date(now.getTime() + expiresIn * 1000).toISOString();
-
-    // Store session token in user record
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        session_token: sessionToken,
-        session_token_expires_at: expiresAt,
-      })
-      .eq('email', email.toLowerCase());
-
-    if (updateError) {
-      console.error('Error storing session token:', updateError);
-      // Still return success; token is valid even if not stored
-    }
-
-    // Return success with token and user info
-    return res.status(200).json({
-      success: true,
-      token: sessionToken,
-      email: email.toLowerCase(),
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        dob: user.dob,
-        country: user.country,
-        city: user.city,
-        songs: user.songs,
-        notes: user.notes,
-        views: user.views,
-      },
+    // Send email via Resend
+    const { error: emailError } = await resend.emails.send({
+      from: 'My Life in 3 Songs <hello@mylifein3songs.com>',
+      to: email.toLowerCase(),
+      subject: 'Your login code',
+      html: buildEmailHTML(code),
     });
 
+    if (emailError) {
+      console.error('Resend email error:', emailError);
+      return res.status(500).json({ 
+        error: 'Failed to send email. Please try again.' 
+      });
+    }
+
+    // Success
+    return res.status(200).json({ success: true });
+
   } catch (err) {
-    console.error('Unexpected error in verify-otp:', err);
+    console.error('Unexpected error in send-otp:', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+/**
+ * Generate a random 6-digit OTP code
+ */
+function generateOTPCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 /**
@@ -189,4 +104,79 @@ export default async function handler(req, res) {
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+/**
+ * Build the HTML email template
+ */
+function buildEmailHTML(code) {
+  const spacedCode = code.split('').join(' ');
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #1E2A4A; }
+        .container { max-width: 400px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; padding-bottom: 20px; }
+        .logo-text { font-size: 16px; font-weight: 600; color: #1E2A4A; margin: 0; }
+        .content { text-align: center; }
+        .code-display { 
+          font-size: 36px; 
+          font-weight: bold; 
+          letter-spacing: 8px; 
+          font-family: 'Courier New', monospace; 
+          margin: 20px 0;
+          padding: 20px;
+          background-color: #FAF8F5;
+          border-radius: 8px;
+        }
+        .expiry { 
+          font-size: 12px; 
+          color: #999; 
+          margin-top: 15px; 
+        }
+        .footer { 
+          font-size: 11px; 
+          color: #BBB; 
+          margin-top: 30px; 
+          text-align: center; 
+        }
+        .note { 
+          background-color: #FFFAF0; 
+          border-left: 3px solid #E8A042; 
+          padding: 10px 12px; 
+          font-size: 12px; 
+          margin-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <p class="logo-text">My Life in 3 Songs</p>
+        </div>
+        
+        <div class="content">
+          <p>Your verification code is:</p>
+          
+          <div class="code-display">${spacedCode}</div>
+          
+          <p class="expiry">This code expires in 10 minutes.</p>
+          
+          <div class="note">
+            <strong>Didn't request this code?</strong><br>
+            You can safely ignore this email. Your account won't be created unless you enter this code.
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>My Life in 3 Songs — mylifein3songs.com</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
