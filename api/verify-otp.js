@@ -1,192 +1,128 @@
-/**
- * Vercel Serverless Function: /api/verify-otp
- * 
- * Receives an email and OTP code, verifies it against the otp_codes table,
- * creates/updates the user in the users table, generates a session token,
- * and returns authentication details.
- * 
- * Called by: doVerifyCode(), doVerifyLogin(), email verification flows
- */
+const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
 
-import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+// Initialize clients
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const jwtSecret = process.env.JWT_SECRET;
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+if (!supabaseUrl || !supabaseKey || !jwtSecret) {
+  console.error('Missing environment variables:', {
+    supabaseUrl: !!supabaseUrl,
+    supabaseKey: !!supabaseKey,
+    jwtSecret: !!jwtSecret
+  });
+}
 
-// JWT secret must be set in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-export default async function handler(req, res) {
-  // CORS preflight
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    return res.status(200).end();
-  }
-
-  // Only allow GET and POST
-  if (req.method !== 'GET' && req.method !== 'POST') {
+module.exports = async (req, res) => {
+  // Only POST requests
+  if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Extract email and code from query params (GET) or body (POST)
-  const email = 
-    (req.method === 'GET' ? req.query.email : req.body?.email) || '';
-  const code = 
-    (req.method === 'GET' ? req.query.code : req.body?.code) || '';
-
-  // Validate inputs
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Missing email or code' });
-  }
-
-  if (!isValidEmail(email) || code.length !== 6 || !/^\d{6}$/.test(code)) {
-    return res.status(400).json({ error: 'Invalid email or code format' });
-  }
-
   try {
-    const now = new Date();
+    const { email, code, action } = req.body;
 
-    // Query Supabase for matching OTP code
-    const { data: otpRecords, error: queryError } = await supabase
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' });
+    }
+
+    // Look up the OTP code
+    const { data: otpData, error: otpError } = await supabase
       .from('otp_codes')
       .select('*')
       .eq('email', email.toLowerCase())
       .eq('code', code)
       .eq('used', false)
-      .gt('expires_at', now.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .single();
 
-    if (queryError) {
-      console.error('OTP query error:', queryError);
-      return res.status(500).json({ error: 'Verification failed' });
+    if (otpError || !otpData) {
+      console.error('OTP lookup error:', otpError);
+      return res.status(400).json({ error: 'Invalid or expired code' });
     }
 
-    // If no valid OTP found
-    if (!otpRecords || otpRecords.length === 0) {
-      return res.status(401).json({ 
-        error: 'Invalid or expired code. Please request a new one.' 
-      });
+    // Check if code has expired
+    const now = new Date();
+    const expiresAt = new Date(otpData.expires_at);
+    if (now > expiresAt) {
+      return res.status(400).json({ error: 'Code has expired' });
     }
 
-    const otpRecord = otpRecords[0];
-
-    // Mark OTP as used (prevent replay attacks)
-    const { error: markError } = await supabase
+    // Mark code as used (prevents replay attacks)
+    const { error: updateError } = await supabase
       .from('otp_codes')
       .update({ used: true })
-      .eq('id', otpRecord.id);
+      .eq('id', otpData.id);
 
-    if (markError) {
-      console.error('Error marking OTP as used:', markError);
-      // Don't fail here; token generation is more important
+    if (updateError) {
+      console.error('Error marking OTP as used:', updateError);
+      return res.status(500).json({ error: 'Failed to process verification' });
     }
 
     // Check if user exists
-    const { data: existingUser, error: selectError } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email.toLowerCase())
       .single();
 
-    // Note: .single() throws error if no row found, which is expected
-    let user = existingUser;
+    let user = userData;
 
-    // If user doesn't exist, create a stub account
-    if (!existingUser) {
-      const { data: newUser, error: createError } = await supabase
+    // If action is 'signup' and user doesn't exist, create user
+    if (action === 'signup' && !userData) {
+      const { data: newUser, error: insertError } = await supabase
         .from('users')
-        .insert({
-          email: email.toLowerCase(),
-          name: '',
-          dob: null,
-          country: null,
-          city: null,
-          songs: null,
-          notes: '',
-          views: 0,
-          created_at: now.toISOString(),
-          last_login: now.toISOString(),
-        })
+        .insert([
+          {
+            email: email.toLowerCase(),
+            created_at: new Date().toISOString(),
+            last_login: new Date().toISOString()
+          }
+        ])
         .select()
         .single();
 
-      if (createError) {
-        console.error('Error creating user:', createError);
+      if (insertError) {
+        console.error('Error creating user:', insertError);
         return res.status(500).json({ error: 'Failed to create account' });
       }
 
       user = newUser;
-    } else {
-      // Update last_login for existing user
-      await supabase
-        .from('users')
-        .update({ last_login: now.toISOString() })
-        .eq('email', email.toLowerCase());
+    } else if (!userData && action !== 'signup') {
+      // User doesn't exist and not signing up
+      return res.status(400).json({ error: 'User not found' });
     }
 
-    // Generate session token (JWT)
-    const expiresIn = 24 * 60 * 60; // 24 hours
-    const sessionToken = jwt.sign(
-      {
-        email: email.toLowerCase(),
-        userId: user.id,
-        type: 'session',
-      },
-      JWT_SECRET,
-      { expiresIn }
-    );
-
-    const expiresAt = new Date(now.getTime() + expiresIn * 1000).toISOString();
-
-    // Store session token in user record
-    const { error: updateError } = await supabase
+    // Update last_login
+    await supabase
       .from('users')
-      .update({
-        session_token: sessionToken,
-        session_token_expires_at: expiresAt,
-      })
+      .update({ last_login: new Date().toISOString() })
       .eq('email', email.toLowerCase());
 
-    if (updateError) {
-      console.error('Error storing session token:', updateError);
-      // Still return success; token is valid even if not stored
-    }
+    // Create JWT token
+    const token = jwt.sign(
+      { email: email.toLowerCase(), userId: user.id },
+      jwtSecret,
+      { expiresIn: '30d' }
+    );
 
-    // Return success with token and user info
     return res.status(200).json({
       success: true,
-      token: sessionToken,
-      email: email.toLowerCase(),
+      message: 'Verification successful',
+      token: token,
       user: {
-        id: user.id,
         email: user.email,
-        name: user.name,
-        dob: user.dob,
-        country: user.country,
-        city: user.city,
-        songs: user.songs,
-        notes: user.notes,
-        views: user.views,
-      },
+        id: user.id
+      }
     });
 
-  } catch (err) {
-    console.error('Unexpected error in verify-otp:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+  } catch (error) {
+    console.error('Unhandled error in verify-otp:', error);
+    return res.status(500).json({
+      error: 'A server error occurred',
+      details: error.message
+    });
   }
-}
-
-/**
- * Validate email format
- */
-function isValidEmail(email) {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+};
