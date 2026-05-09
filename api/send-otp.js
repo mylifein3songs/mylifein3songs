@@ -1,18 +1,16 @@
-const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
 
-// Initialize clients
+// Initialize Resend
+const resendKey = process.env.RESEND_API_KEY;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
-const resendKey = process.env.RESEND_API_KEY;
 
-console.log('[send-otp] Initializing with:', {
+console.log('[send-otp] Initializing:', {
+  resendKey: resendKey ? 'SET' : 'MISSING',
   supabaseUrl: supabaseUrl ? 'SET' : 'MISSING',
-  supabaseKey: supabaseKey ? 'SET' : 'MISSING',
-  resendKey: resendKey ? 'SET' : 'MISSING'
+  supabaseKey: supabaseKey ? 'SET' : 'MISSING'
 });
 
-const supabase = createClient(supabaseUrl, supabaseKey);
 const resend = new Resend(resendKey);
 
 // Generate random 6-digit code
@@ -21,9 +19,8 @@ function generateOTP() {
 }
 
 module.exports = async (req, res) => {
-  console.log('[send-otp] Request received:', { method: req.method, body: req.body });
+  console.log('[send-otp] Request received:', { method: req.method });
   
-  // Only POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -36,47 +33,51 @@ module.exports = async (req, res) => {
     }
 
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     
     console.log('[send-otp] Generated OTP:', { email, code, expiresAt });
 
-    // Store OTP in Supabase
-    console.log('[send-otp] Attempting to insert into otp_codes table...');
+    // Use direct REST API call instead of JS client
+    console.log('[send-otp] Inserting via REST API directly...');
     
-    const { error: insertError, data: insertData } = await supabase
-      .from('otp_codes')
-      .insert([
-        {
-          email: email.toLowerCase(),
-          code: code,
-          action: action || 'login',
-          expires_at: expiresAt.toISOString(),
-          used: false
-        }
-      ]);
+    const insertResponse = await fetch(`${supabaseUrl}/rest/v1/otp_codes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        email: email.toLowerCase(),
+        code: code,
+        action: action || 'login',
+        expires_at: expiresAt,
+        used: false
+      })
+    });
 
-    if (insertError) {
-      console.error('[send-otp] SUPABASE INSERT ERROR:', {
-        message: insertError.message,
-        code: insertError.code,
-        details: insertError.details,
-        hint: insertError.hint,
-        status: insertError.status,
-        fullError: JSON.stringify(insertError)
+    console.log('[send-otp] REST API response status:', insertResponse.status);
+    
+    const insertData = await insertResponse.text();
+    console.log('[send-otp] REST API response:', insertData.substring(0, 500));
+
+    if (!insertResponse.ok) {
+      console.error('[send-otp] REST API error:', {
+        status: insertResponse.status,
+        response: insertData
       });
       return res.status(500).json({ 
         error: 'Failed to store OTP',
-        details: insertError.message,
-        code: insertError.code
+        details: insertData
       });
     }
-    
-    console.log('[send-otp] OTP stored successfully in Supabase');
+
+    console.log('[send-otp] OTP stored successfully');
 
     // Send email via Resend
     console.log('[send-otp] Sending email via Resend...');
     
-    const { error: emailError, data: emailData } = await resend.emails.send({
+    const emailResponse = await resend.emails.send({
       from: 'My Life in 3 Songs <hello@mylifein3songs.com>',
       to: email,
       subject: 'Your verification code',
@@ -93,11 +94,14 @@ module.exports = async (req, res) => {
       `
     });
 
-    if (emailError) {
-      console.error('[send-otp] RESEND EMAIL ERROR:', emailError);
-      return res.status(500).json({ error: 'Failed to send email', details: emailError.message });
+    if (emailResponse.error) {
+      console.error('[send-otp] Email send error:', emailResponse.error);
+      return res.status(500).json({ 
+        error: 'Failed to send email',
+        details: emailResponse.error.message
+      });
     }
-    
+
     console.log('[send-otp] Email sent successfully');
 
     return res.status(200).json({
@@ -106,13 +110,12 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('[send-otp] UNHANDLED ERROR:', {
+    console.error('[send-otp] Unhandled error:', {
       message: error.message,
-      stack: error.stack,
-      fullError: JSON.stringify(error)
+      stack: error.stack
     });
     return res.status(500).json({
-      error: 'A server error occurred',
+      error: 'Server error',
       details: error.message
     });
   }
