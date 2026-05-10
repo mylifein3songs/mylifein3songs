@@ -1130,7 +1130,8 @@ async function doSignup(){
 }
 async function doVerifySignup(){
   clearErr('verify-err');
-  const email = state.pendingUser.email;
+  const u = state.pendingUser;
+  const email = u.email;
   const code = getOTP('otp-inputs');
   
   if (!code || code.length !== 6) {
@@ -1147,7 +1148,15 @@ async function doVerifySignup(){
     const response = await fetch('/api/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code, action: 'signup' })
+      body: JSON.stringify({ 
+        email, 
+        code, 
+        action: 'signup',
+        name: u.name,
+        dob: u.dob,
+        country: u.country,
+        city: u.city
+      })
     });
     
     verifyBtn.disabled = false;
@@ -1165,7 +1174,6 @@ async function doVerifySignup(){
     localStorage.setItem('sessionToken', result.token);
     
     // Create user object from the API response
-    const u = state.pendingUser;
     const newUser = {
       email: u.email,
       name: u.name,
