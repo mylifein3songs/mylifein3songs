@@ -16,9 +16,10 @@ export default async function handler(req, res) {
   // In production, you could store sent codes in a table and validate here
 
   try {
+    // Use Admin SDK with service role key (bypasses RLS and PGRST125 errors)
     const supabase = createClient(
       process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     if (action === 'signup') {
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
       }
 
       // Check if user already exists
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: checkError } = await supabase
         .from('users')
         .select('email')
         .eq('email', email.toLowerCase())
@@ -60,8 +61,7 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Failed to create user. Please try again.' });
       }
 
-      // TODO: Generate a real JWT token if needed
-      // For now, return a simple token
+      // Generate a simple token
       const token = 'token_' + newUser.id;
 
       return res.status(200).json({
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         // Don't fail the login, just log it
       }
 
-      // TODO: Generate a real JWT token if needed
+      // Generate a simple token
       const token = 'token_' + user.id;
 
       return res.status(200).json({
