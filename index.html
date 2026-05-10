@@ -1273,7 +1273,7 @@ async function doVerifyLogin(){
     const response = await fetch('/api/verify-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, code })
+      body: JSON.stringify({ email, code, action: 'login' })
     });
     
     verifyBtn.disabled = false;
