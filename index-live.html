@@ -1940,30 +1940,52 @@ function submitContact(){
 function confirmDeleteAccount(){
   document.getElementById('delete-confirm-box').style.display='block';
 }
-function doDeleteAccount(){
-  const email=state.currentUser;
-  if(!email)return;
+async function doDeleteAccount(){
+  const email = state.currentUser;
+  if(!email) return;
+  
+  try {
+    // Delete from Supabase
+    const { error } = await fetch('/api/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    }).then(r => r.json());
+    
+    if (error) {
+      alert('Failed to delete account. Please try again.');
+      console.error('Delete error:', error);
+      return;
+    }
+  } catch (e) {
+    alert('Failed to delete account. Please try again.');
+    console.error('Delete exception:', e);
+    return;
+  }
+  
+  // Delete from client-side state
   delete state.db[email];
-  state.currentUser=null;
-  try{localStorage.setItem('tsoyu_db',JSON.stringify(state.db));}catch(e){}
-  try{localStorage.removeItem('tsoyu_user');}catch(e){}
+  state.currentUser = null;
+  try { localStorage.setItem('tsoyu_db', JSON.stringify(state.db)); } catch(e) {}
+  try { localStorage.removeItem('tsoyu_user'); } catch(e) {}
+  
   // Clear signup form
-  document.getElementById('su-name').value='';
-  document.getElementById('su-email').value='';
-  document.getElementById('su-dob').value='';
-  document.getElementById('su-city').value='';
-  populateCountrySelect('su-country','');
+  document.getElementById('su-name').value = '';
+  document.getElementById('su-email').value = '';
+  document.getElementById('su-dob').value = '';
+  document.getElementById('su-city').value = '';
+  populateCountrySelect('su-country', '');
   clearErr('signup-err');
+  
   // Show landing with a farewell message
   show('s-landing');
-  // Brief confirmation message at top
-  const hero=document.querySelector('#s-landing .paper-box .lookup-hero');
-  const msg=document.createElement('div');
-  msg.className='msg success';
-  msg.style.marginBottom='1rem';
-  msg.textContent='Your account has been permanently deleted.';
-  hero.insertAdjacentElement('afterend',msg);
-  setTimeout(()=>{msg.remove();},5000);
+  const hero = document.querySelector('#s-landing .paper-box .lookup-hero');
+  const msg = document.createElement('div');
+  msg.className = 'msg success';
+  msg.style.marginBottom = '1rem';
+  msg.textContent = 'Your account has been permanently deleted.';
+  hero.insertAdjacentElement('afterend', msg);
+  setTimeout(() => { msg.remove(); }, 5000);
 }
 function signOut(){
   state.currentUser=null;
