@@ -1913,27 +1913,57 @@ function clearLookupAndShow(){
   clearErr('lookup-err');
   show('s-lookup');
 }
-function submitContact(){
-  const name=document.getElementById('ct-name').value.trim();
-  const email=document.getElementById('ct-email').value.trim();
-  const subject=document.getElementById('ct-subject').value;
-  const message=document.getElementById('ct-message').value.trim();
-  const errEl=document.getElementById('contact-err');
-  errEl.innerHTML='';
-  if(!name||!email||!subject||!message){
-    errEl.innerHTML='<div class="msg error">Please fill in all fields.</div>';return;
+async function submitContact(){
+  const name = document.getElementById('ct-name').value.trim();
+  const email = document.getElementById('ct-email').value.trim();
+  const subject = document.getElementById('ct-subject').value;
+  const message = document.getElementById('ct-message').value.trim();
+  const errEl = document.getElementById('contact-err');
+  errEl.innerHTML = '';
+  
+  if (!name || !email || !subject || !message) {
+    errEl.innerHTML = '<div class="msg error">Please fill in all fields.</div>';
+    return;
   }
-  if(!email.includes('@')){
-    errEl.innerHTML='<div class="msg error">Please enter a valid email address.</div>';return;
+  
+  if (!email.includes('@')) {
+    errEl.innerHTML = '<div class="msg error">Please enter a valid email address.</div>';
+    return;
   }
-  // In production this would POST to a server endpoint
-  // For demo, just show the success message and clear the form
-  document.getElementById('ct-name').value='';
-  document.getElementById('ct-email').value='';
-  document.getElementById('ct-subject').value='';
-  document.getElementById('ct-message').value='';
-  document.getElementById('contact-success').style.display='block';
-  setTimeout(()=>{document.getElementById('contact-success').style.display='none';},5000);
+  
+  try {
+    const submitBtn = document.querySelector('button[onclick="submitContact()"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    
+    const response = await fetch('/api/send-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, subject, message })
+    });
+    
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+    
+    if (!response.ok) {
+      const data = await response.json();
+      errEl.innerHTML = `<div class="msg error">${data.error || 'Failed to send message. Please try again.'}</div>`;
+      return;
+    }
+    
+    // Clear form and show success
+    document.getElementById('ct-name').value = '';
+    document.getElementById('ct-email').value = '';
+    document.getElementById('ct-subject').value = '';
+    document.getElementById('ct-message').value = '';
+    document.getElementById('contact-success').style.display = 'block';
+    setTimeout(() => { document.getElementById('contact-success').style.display = 'none'; }, 5000);
+    
+  } catch (e) {
+    errEl.innerHTML = '<div class="msg error">An error occurred. Please try again.</div>';
+    console.error('Contact form error:', e);
+  }
 }
 function confirmDeleteAccount(){
   document.getElementById('delete-confirm-box').style.display='block';
