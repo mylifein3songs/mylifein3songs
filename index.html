@@ -927,7 +927,7 @@ let state={pendingUser:null,pendingCode:null,currentUser:null,db:{}};
 async function loadState(){
   // Try to restore session from sessionStorage
   try{
-    const sessionEmail=sessionStorage.getItem('tsoyu_session_email');
+    const sessionEmail = localStorage.getItem('tsoyu_session_email');
     if(sessionEmail){
       state.currentUser=sessionEmail;
     }
@@ -964,7 +964,7 @@ async function saveDB(){
   if(state.currentUser){
     try{
       // Store session in sessionStorage (persists during browser session)
-      sessionStorage.setItem('tsoyu_session_email',state.currentUser);
+      localStorage.setItem('tsoyu_session_email', state.currentUser);
       
       // Update user record in Supabase
       const user=state.db[state.currentUser];
@@ -1188,7 +1188,7 @@ async function doVerifySignup(){
     state.db[u.email] = newUser;
     state.currentUser = u.email;
     state.pendingUser = null;
-    sessionStorage.setItem('tsoyu_session_email', u.email);
+    localStorage.setItem('tsoyu_session_email', u.email);
     
     initPickScreen(false);
     show('s-pick');
@@ -1300,7 +1300,7 @@ async function doVerifyLogin(){
     // Success — set session
     state.currentUser=email;
     state.pendingUser=null;
-    sessionStorage.setItem('tsoyu_session_email',email);
+    localStorage.setItem('tsoyu_session_email', email);
     
     const user=state.db[email];
     if(user.songs&&user.songs.length>0){
@@ -1435,7 +1435,7 @@ async function applyDetailsSave(details,newEmail){
       state.db[newEmail]=u;
       delete state.db[oldEmail];
       state.currentUser=newEmail;
-      sessionStorage.setItem('tsoyu_session_email',newEmail);
+      localStorage.setItem('tsoyu_session_email', newEmail);
     } else {
       // Just updating details, not email
       await saveDB();
@@ -1966,7 +1966,7 @@ async function doDeleteAccount(){
 }
 function signOut(){
   state.currentUser=null;
-  try{sessionStorage.removeItem('tsoyu_session_email');}catch(e){}
+  try{localStorage.removeItem('tsoyu_session_email');}catch(e){}
   // Clear signup form so it's blank for the next person
   document.getElementById('su-name').value='';
   document.getElementById('su-email').value='';
