@@ -855,6 +855,17 @@ const MOCK_SONGS=[
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────
+function formatDateInput(el){
+  let v=el.value.replace(/\D/g,'');
+  if(v.length>=2)v=v.slice(0,2)+'/'+v.slice(2);
+  if(v.length>=5)v=v.slice(0,5)+'/'+v.slice(5);
+  el.value=v;
+  if(v.length===10){
+    const[day,month,year]=v.split('/');
+    const isoDate=year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    el.dataset.isoDate=isoDate;
+  }
+}
 function formatDOB(d){
   if(!d)return'';
   const[y,m,day]=d.split('-').map(Number);
