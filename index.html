@@ -2024,6 +2024,8 @@ function signOut(){
     // If not logged in and hash is an auth screen, stay on landing (default)
   })();
 })();
+  // Initialize DOB text input validation
+['su-dob','ed-dob','lk-dob'].forEach(id=>{const el=document.getElementById(id);if(el)validateDOBInput(el);});
 </script>
 </body>
 </html>
