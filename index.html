@@ -345,7 +345,7 @@
       <label>Email Address</label>
       <input type="email" id="su-email" placeholder="your@email.com">
       <label>Date of Birth</label>
-      <input type="text" id="su-dob" placeholder="DD/MM/YYYY" inputmode="numeric">
+      <input type="text" id="su-dob" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10" oninput="formatDateInput(this)">
       <label>Country</label>
       <select id="su-country"><option value="">&mdash; Select your country &mdash;</option></select>
       <label>City <span class="optional-tag">(optional)</span></label>
@@ -463,7 +463,7 @@
       <label>Email Address <span class="optional-tag">&mdash; a verification code will be sent if changed</span></label>
       <input type="email" id="ed-email" placeholder="your@email.com">
       <label>Date of Birth</label>
-      <input type="text" id="ed-dob" placeholder="DD/MM/YYYY" inputmode="numeric">
+      <input type="text" id="ed-dob" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10" oninput="formatDateInput(this)">
       <label>Country</label>
       <select id="ed-country"><option value="">&mdash; Select your country &mdash;</option></select>
       <label>City <span class="optional-tag">(optional)</span></label>
@@ -555,7 +555,7 @@
       <label>Their Email Address</label>
       <input type="email" id="lk-email" placeholder="friend@email.com">
       <label>Their Date of Birth</label>
-      <input type="text" id="lk-dob" placeholder="DD/MM/YYYY" inputmode="numeric">
+      <input type="text" id="lk-dob" placeholder="DD/MM/YYYY" inputmode="numeric" maxlength="10" oninput="formatDateInput(this)">
       <button class="btn" onclick="doLookup()">Find Their Songs</button>
     </div>
     <p class="text-center mt"><span class="link" onclick="show('s-landing')">&larr; Back</span></p>
