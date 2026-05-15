@@ -855,15 +855,20 @@ const MOCK_SONGS=[
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────────
+
 function formatDateInput(el){
-  let v=el.value.replace(/\D/g,'');
-  if(v.length>=2)v=v.slice(0,2)+'/'+v.slice(2);
-  if(v.length>=5)v=v.slice(0,5)+'/'+v.slice(5);
-  el.value=v;
-  if(v.length===10){
-    const[day,month,year]=v.split('/');
-    const isoDate=year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-    el.dataset.isoDate=isoDate;
+  let displayed=el.value.replace(/\D/g,'');
+  let formatted=displayed;
+  if(displayed.length>=2)formatted=displayed.slice(0,2)+'/'+displayed.slice(2);
+  if(displayed.length>=5)formatted=displayed.slice(0,5)+'/'+displayed.slice(5);
+  el.value=formatted;
+  
+  if(displayed.length===8){
+    const day=displayed.slice(0,2);
+    const month=displayed.slice(2,4);
+    const year=displayed.slice(4,8);
+    const isoDate=year+'-'+month+'-'+day;
+    el.dataset.isoValue=isoDate;
   }
 }
 function formatDOB(d){
@@ -1099,7 +1104,7 @@ async function doSignup(){
   clearErr('signup-err');
   const name=document.getElementById('su-name').value.trim();
   const email=document.getElementById('su-email').value.trim().toLowerCase();
-  const dob=document.getElementById('su-dob').value;
+  const dob=document.getElementById('su-dob').dataset.isoValue||document.getElementById('su-dob').value;
   const country=document.getElementById('su-country').value;
   const city=document.getElementById('su-city').value.trim();
   if(!name||!email||!dob||!country){err('signup-err','Please fill in all required fields including your country.');return;}
@@ -1393,7 +1398,7 @@ function saveDetails(){
   clearErr('edit-details-err');
   const name=document.getElementById('ed-name').value.trim();
   const newEmail=document.getElementById('ed-email').value.trim().toLowerCase();
-  const dob=document.getElementById('ed-dob').value;
+  const dob=document.getElementById('ed-dob').dataset.isoValue||document.getElementById('ed-dob').value;
   const country=document.getElementById('ed-country').value;
   const city=document.getElementById('ed-city').value.trim();
   if(!name||!newEmail||!dob||!country){err('edit-details-err','All fields except city are required.');return;}
@@ -1807,7 +1812,7 @@ function emailRecord(){
 async function doLookup(){
   clearErr('lookup-err');
   const email=document.getElementById('lk-email').value.trim().toLowerCase();
-  const dob=document.getElementById('lk-dob').value;
+  const dob=document.getElementById('lk-dob').dataset.isoValue||document.getElementById('lk-dob').value;
   if(!email||!dob){err('lookup-err','Please fill in both fields.');return;}
   
   try{
