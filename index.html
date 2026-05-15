@@ -1062,14 +1062,7 @@ function clampDateYear(el){
     if(parts[0]&&parts[0].length>4){parts[0]=parts[0].slice(0,4);this.value=parts.join('-');}
   });
 }
-['su-dob','ed-dob','lk-dob'].forEach(id=>{const el=document.getElementById(id);if(el)clampDateYear(el);});
-// Set max date on signup AND edit-details DOB to 13 years ago.
-// This is a UI-level safety net; the actual enforcement is in doSignup() and saveDetails().
-(function(){
-  const d=new Date();d.setFullYear(d.getFullYear()-13);
-  const max=d.toISOString().split('T')[0];
-  ['su-dob','ed-dob'].forEach(id=>{const el=document.getElementById(id);if(el)el.max=max;});
-})();
+['su-dob','ed-dob','lk-dob'].forEach(id=>{const el=document.getElementById(id);if(el)validateDOBInput(el);});
 
 // Click-outside to dismiss results
 document.addEventListener('click',function(e){
@@ -1092,12 +1085,13 @@ async function doSignup(){
   const country=document.getElementById('su-country').value;
   const city=document.getElementById('su-city').value.trim();
   if(!name||!email||!dob||!country){err('signup-err','Please fill in all required fields including your country.');return;}
-  if(dob&&dob.split('-')[0].length>4){err('signup-err','Please enter a valid year (4 digits).');return;}
-  const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
+  const dobErr=validateDOBFormat(dob);if(dobErr){err('signup-err',dobErr);return;}
+  const dobParts=dob.split('/');const dobDate=new Date(dobParts[2],dobParts[1]-1,dobParts[0]);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
   if(age<13){err('signup-err','You must be at least 13 years old to register. Please see our Terms of Service.');return;}
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
   
-  state.pendingUser={name,email,dob,country,city};
+const dobFormatted=parseDOBString(dob);
+  state.pendingUser={name,email,dob:dobFormatted,country,city};
   
   try {
     const sendBtn = document.querySelector('button[onclick="doSignup()"]');
@@ -1386,9 +1380,9 @@ function saveDetails(){
   const country=document.getElementById('ed-country').value;
   const city=document.getElementById('ed-city').value.trim();
   if(!name||!newEmail||!dob||!country){err('edit-details-err','All fields except city are required.');return;}
-  if(dob&&dob.split('-')[0].length>4){err('edit-details-err','Please enter a valid year (4 digits).');return;}
+const dobErr=validateDOBFormat(dob);if(dobErr){err('edit-details-err',dobErr);return;}
   // Age 13+ enforcement (mirrors doSignup). Prevents users editing their DOB to under 13.
-  const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();
+  const dobParts=dob.split('/');const dobDate=new Date(dobParts[2],dobParts[1]-1,dobParts[0]);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();
   const m=today.getMonth()-dobDate.getMonth();
   if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
   if(age<13){err('edit-details-err','You must be at least 13 years old to use this service. Please see our Terms of Service.');return;}
@@ -1404,7 +1398,8 @@ function saveDetails(){
     document.getElementById('email-verify-box').style.display='block';
     return;
   }
-  applyDetailsSave({name,dob,country,city},null);
+  const dobFormatted=parseDOBString(dob);
+  applyDetailsSave({name,dob:dobFormatted,country,city},null);
 }
 async function applyDetailsSave(details,newEmail){
   const u=state.db[state.currentUser];
@@ -1808,7 +1803,7 @@ async function doLookup(){
     }
     
     const user=data;
-    if(user.dob!==dob){err('lookup-err','Date of birth does not match our records.');return;}
+    const dobFormatted=parseDOBString(dob);if(user.dob!==dobFormatted){err('lookup-err','Date of birth does not match our records.');return;}
     if(!user.songs||user.songs.length===0||!user.songs.some(Boolean)){err('lookup-err',"This person hasn't saved their songs yet.");return;}
     
     // Increment views in Supabase
