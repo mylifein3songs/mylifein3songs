@@ -1252,8 +1252,15 @@ function show(id){
   if(id==='s-stats')renderStats();
   if(id==='s-admin')renderAdmin();
   if(id==='s-landing')refreshLandingForUser();
- if(id==='s-lookup'){
+if(id==='s-lookup'){
+    document.getElementById('lk-email').value='';
+    document.getElementById('lk-dob').value='';
+    document.getElementById('lk-country').value='';
+    document.getElementById('lk-name').value='';
+    document.getElementById('secondary-search-results').style.display='none';
+    document.getElementById('secondary-matches').innerHTML='';
     populateCountrySelect('lk-country','');
+    clearErr('lookup-err');
   }
   // Persist current screen in URL path so refresh stays on same page
   try{
