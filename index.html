@@ -552,11 +552,42 @@
     <div class="vinyl-divider">Look Up Someone&rsquo;s Songs</div>
     <div class="paper-box">
       <div id="lookup-err"></div>
-      <label>Their Email Address</label>
-      <input type="email" id="lk-email" placeholder="friend@email.com">
-      <label>Their Date of Birth</label>
-      <input type="date" id="lk-dob" max="2099-12-31">
-      <button class="btn" onclick="doLookup()">Find Their Songs</button>
+      
+      <!-- PRIMARY SEARCH: Email + DOB -->
+      <div id="primary-search-form">
+        <div style="text-align:center;margin-bottom:1.2rem;font-size:12px;color:var(--mid)">
+          <strong>Search by Email & Date of Birth</strong>
+        </div>
+        <label>Their Email Address</label>
+        <input type="email" id="lk-email" placeholder="friend@email.com">
+        <label>Their Date of Birth</label>
+        <input type="date" id="lk-dob" max="2099-12-31">
+        <button class="btn" onclick="doLookup()">Find Their Songs</button>
+      </div>
+      
+      <!-- DIVIDER -->
+      <div style="text-align:center;margin:1.5rem 0;position:relative;">
+        <div style="border-top:1px solid var(--light);margin-bottom:-.6rem"></div>
+        <span style="background:var(--paper);padding:0 .6rem;color:var(--mid);font-size:11px;letter-spacing:1px">OR</span>
+      </div>
+      
+      <!-- SECONDARY SEARCH: Country + Name -->
+      <div id="secondary-search-form">
+        <div style="text-align:center;margin-bottom:1.2rem;font-size:12px;color:var(--mid)">
+          <strong>Search by Country & Name</strong>
+        </div>
+        <label>Country</label>
+        <select id="lk-country"><option value="">&mdash; Select country &mdash;</option></select>
+        <label>Name (or partial name)</label>
+        <input type="text" id="lk-name" placeholder="e.g. Nina or Nina Simone" onkeydown="if(event.key==='Enter')doSecondarySearch()">
+        <button class="btn" onclick="doSecondarySearch()">Search</button>
+      </div>
+      
+      <!-- Secondary search results dropdown -->
+      <div id="secondary-search-results" style="margin-top:1rem;display:none">
+        <div style="font-size:12px;color:var(--mid);margin-bottom:.8rem;font-weight:600">Matching Records:</div>
+        <div id="secondary-matches"></div>
+      </div>
     </div>
     <p class="text-center mt"><span class="link" onclick="show('s-landing')">&larr; Back</span></p>
   </div>
@@ -1020,6 +1051,7 @@ function show(id){
   if(id==='s-admin')renderAdmin();
   if(id==='s-landing')refreshLandingForUser();
   if(id==='s-lookup'){
+    populateCountrySelect('lk-country','');
     document.getElementById('lk-email').value='';
     document.getElementById('lk-dob').value='';
     clearErr('lookup-err');
@@ -1828,6 +1860,129 @@ async function doLookup(){
   }
 }
 
+// ── Secondary Search (Country + Name) ──────────────────────────────────
+async function doSecondarySearch(){
+  clearErr('lookup-err');
+  const country = document.getElementById('lk-country').value.trim();
+  const name = document.getElementById('lk-name').value.trim();
+  
+  if(!country || !name){
+    err('lookup-err', 'Please select a country and enter a name.');
+    return;
+  }
+  
+  try {
+    // Fetch all users from Supabase (or at least those in the selected country)
+    const {data, error} = await window.supabase_client
+      .from('users')
+      .select('*')
+      .eq('country', country);
+    
+    if(error){
+      err('lookup-err', 'Error searching records. Please try again.');
+      console.error('Secondary search error:', error);
+      return;
+    }
+    
+    if(!data || data.length === 0){
+      err('lookup-err', `No records found in ${country}.`);
+      return;
+    }
+    
+    // Filter by name (case-insensitive, partial match)
+    const nameLower = name.toLowerCase();
+    const matches = data.filter(user => 
+      user.name && user.name.toLowerCase().includes(nameLower)
+    );
+    
+    if(matches.length === 0){
+      err('lookup-err', `No records found matching "${name}" in ${country}.`);
+      return;
+    }
+    
+    // Sort by name
+    matches.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    // Display matches in dropdown
+    displaySecondaryMatches(matches);
+    clearErr('lookup-err');
+    
+  } catch(e){
+    err('lookup-err', 'Could not search records. Please try again.');
+    console.error('Secondary search exception:', e);
+  }
+}
+
+function displaySecondaryMatches(matches){
+  const container = document.getElementById('secondary-matches');
+  const resultsDiv = document.getElementById('secondary-search-results');
+  
+  const html = matches.map(user => {
+    const dob = formatDOB(user.dob);
+    return `
+      <div style="padding:.8rem;background:var(--light);border-radius:8px;margin-bottom:.6rem;cursor:pointer;transition:all .15s" 
+           onmouseover="this.style.background='rgba(232,160,66,.15)'" 
+           onmouseout="this.style.background='var(--light)'" 
+           onclick="loadSecondaryResult('${escHtml(user.email)}')">
+        <div style="font-weight:600;color:var(--dark);margin-bottom:.3rem">${escHtml(user.name)}</div>
+        <div style="font-size:12px;color:var(--mid)">
+          ${dob} &nbsp;&middot;&nbsp; ${escHtml(user.country)}
+          ${user.city ? `<br><span style="font-size:11px">${escHtml(user.city)}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  container.innerHTML = html;
+  resultsDiv.style.display = 'block';
+}
+
+async function loadSecondaryResult(email){
+  clearErr('lookup-err');
+  
+  try {
+    const {data, error} = await window.supabase_client
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if(!data || error){
+      err('lookup-err', 'Could not load this record.');
+      return;
+    }
+    
+    const user = data;
+    
+    // Check if user has songs
+    if(!user.songs || user.songs.length === 0 || !user.songs.some(Boolean)){
+      err('lookup-err', "This person hasn't saved their songs yet.");
+      return;
+    }
+    
+    // Increment views
+    user.views = (user.views || 0) + 1;
+    const {error: updateError} = await window.supabase_client
+      .from('users')
+      .update({views: user.views})
+      .eq('email', email);
+    
+    if(updateError){
+      console.error('Error updating views:', updateError);
+    }
+    
+    // Cache and display
+    state.db[email] = user;
+    setEl('pub-record-card', buildRecordCard(user, user.songs, user.notes || ''));
+    lastViewedUser = user;
+    show('s-view');
+    
+  } catch(e){
+    err('lookup-err', 'Could not load record. Please try again.');
+    console.error('Load result error:', e);
+  }
+}
+
 // ── Stats ──────────────────────────────────────────────────────────────
 function renderStats(){
   setEl('stats-intro', 'Thanks for your interest in our community stats!');
@@ -1861,7 +2016,9 @@ function renderAdmin(){
 function clearLookupAndShow(){
   document.getElementById('lk-email').value='';
   document.getElementById('lk-dob').value='';
-  clearErr('lookup-err');
+  document.getElementById('lk-country').value='';
+  document.getElementById('lk-name').value='';
+  document.getElementById('secondary-search-results').style.display='none';
   show('s-lookup');
 }
 async function submitContact(){
