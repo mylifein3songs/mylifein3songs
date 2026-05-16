@@ -139,7 +139,11 @@
   .search-btn{background:var(--dark);color:var(--cream);border:none;border-radius:6px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
   .search-btn:hover{background:var(--amber)}
   .results-list{border:1.5px solid var(--dark);max-height:240px;overflow-y:auto;background:#fff}
-  .result-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--light);cursor:pointer;transition:background .1s}
+  .secondary-match-item{padding:0.8rem;background:var(--cream);border-bottom:0.5px solid var(--light);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:0.3rem}
+  .secondary-match-item:hover{background:var(--light)}
+  .secondary-match-item:last-child{border-bottom:none}
+  .secondary-match-name{font-weight:600;color:var(--dark)}
+  .secondary-match-meta{font-size:12px;color:var(--mid)}  .result-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:.5px solid var(--light);cursor:pointer;transition:background .1s}
   .result-item:hover{background:var(--light)}
   .result-item.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
   .result-thumb{width:32px;height:32px;border-radius:50%;background:var(--groove);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--cream)}
@@ -548,7 +552,7 @@
   </div>
 
   <!-- LOOKUP -->
-  <div class="screen" id="s-lookup">
+<div class="screen" id="s-lookup">
     <div class="vinyl-divider">Look Up Someone&rsquo;s Songs</div>
     <div class="paper-box">
       <div id="lookup-err"></div>
@@ -583,10 +587,10 @@
         <button class="btn" onclick="doSecondarySearch()">Search</button>
       </div>
       
-      <!-- Secondary search results dropdown -->
-      <div id="secondary-search-results" style="margin-top:1rem;display:none">
+      <!-- Secondary search results dropdown (scrollable) -->
+      <div id="secondary-search-results" style="display:none;margin-top:1rem">
         <div style="font-size:12px;color:var(--mid);margin-bottom:.8rem;font-weight:600">Matching Records:</div>
-        <div id="secondary-matches"></div>
+        <div id="secondary-matches" style="border:1.5px solid var(--dark);max-height:360px;overflow-y:auto;background:#fff;border-radius:6px"></div>
       </div>
     </div>
     <p class="text-center mt"><span class="link" onclick="show('s-landing')">&larr; Back</span></p>
@@ -1050,11 +1054,8 @@ function show(id){
   if(id==='s-stats')renderStats();
   if(id==='s-admin')renderAdmin();
   if(id==='s-landing')refreshLandingForUser();
-  if(id==='s-lookup'){
+ if(id==='s-lookup'){
     populateCountrySelect('lk-country','');
-    document.getElementById('lk-email').value='';
-    document.getElementById('lk-dob').value='';
-    clearErr('lookup-err');
   }
   // Persist current screen in URL path so refresh stays on same page
   try{
@@ -1865,14 +1866,24 @@ async function doSecondarySearch(){
   clearErr('lookup-err');
   const country = document.getElementById('lk-country').value.trim();
   const name = document.getElementById('lk-name').value.trim();
+  const resultsDiv = document.getElementById('secondary-search-results');
+  const matchesDiv = document.getElementById('secondary-matches');
+  
+  // Clear previous results immediately
+  matchesDiv.innerHTML = '';
   
   if(!country || !name){
     err('lookup-err', 'Please select a country and enter a name.');
+    resultsDiv.style.display = 'none';
     return;
   }
   
+  // Show loading state
+  resultsDiv.style.display = 'block';
+  matchesDiv.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--mid)">Searching...</div>';
+  
   try {
-    // Fetch all users from Supabase (or at least those in the selected country)
+    // Fetch all users from Supabase for the selected country
     const {data, error} = await window.supabase_client
       .from('users')
       .select('*')
@@ -1880,12 +1891,14 @@ async function doSecondarySearch(){
     
     if(error){
       err('lookup-err', 'Error searching records. Please try again.');
+      matchesDiv.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red)">Search failed. Please try again.</div>';
       console.error('Secondary search error:', error);
       return;
     }
     
     if(!data || data.length === 0){
-      err('lookup-err', `No records found in ${country}.`);
+      matchesDiv.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--mid)">No records found in ${escHtml(country)}.</div>`;
+      clearErr('lookup-err');
       return;
     }
     
@@ -1895,46 +1908,41 @@ async function doSecondarySearch(){
       user.name && user.name.toLowerCase().includes(nameLower)
     );
     
+    // Clear error and display results
+    clearErr('lookup-err');
+    
     if(matches.length === 0){
-      err('lookup-err', `No records found matching "${name}" in ${country}.`);
+      matchesDiv.innerHTML = `<div style="padding:1rem;text-align:center;color:var(--mid)">No records found matching "${escHtml(name)}" in ${escHtml(country)}.</div>`;
       return;
     }
     
     // Sort by name
     matches.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
-    // Display matches in dropdown
-    displaySecondaryMatches(matches);
-    clearErr('lookup-err');
+    // Display matches in scrollable dropdown
+    displaySecondaryMatches(matches, matchesDiv);
     
   } catch(e){
     err('lookup-err', 'Could not search records. Please try again.');
+    matchesDiv.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red)">Search failed. Please try again.</div>';
     console.error('Secondary search exception:', e);
   }
 }
 
-function displaySecondaryMatches(matches){
-  const container = document.getElementById('secondary-matches');
-  const resultsDiv = document.getElementById('secondary-search-results');
-  
+function displaySecondaryMatches(matches, container){
   const html = matches.map(user => {
     const dob = formatDOB(user.dob);
     return `
-      <div style="padding:.8rem;background:var(--light);border-radius:8px;margin-bottom:.6rem;cursor:pointer;transition:all .15s" 
-           onmouseover="this.style.background='rgba(232,160,66,.15)'" 
-           onmouseout="this.style.background='var(--light)'" 
-           onclick="loadSecondaryResult('${escHtml(user.email)}')">
-        <div style="font-weight:600;color:var(--dark);margin-bottom:.3rem">${escHtml(user.name)}</div>
-        <div style="font-size:12px;color:var(--mid)">
-          ${dob} &nbsp;&middot;&nbsp; ${escHtml(user.country)}
-          ${user.city ? `<br><span style="font-size:11px">${escHtml(user.city)}</span>` : ''}
+      <div class="secondary-match-item" onclick="loadSecondaryResult('${escHtml(user.email)}')">
+        <div class="secondary-match-name">${escHtml(user.name)}</div>
+        <div class="secondary-match-meta">
+          ${dob} &nbsp;&middot;&nbsp; ${escHtml(user.country)}${user.city ? `<br>${escHtml(user.city)}` : ''}
         </div>
       </div>
     `;
   }).join('');
   
   container.innerHTML = html;
-  resultsDiv.style.display = 'block';
 }
 
 async function loadSecondaryResult(email){
@@ -2019,6 +2027,8 @@ function clearLookupAndShow(){
   document.getElementById('lk-country').value='';
   document.getElementById('lk-name').value='';
   document.getElementById('secondary-search-results').style.display='none';
+  document.getElementById('secondary-matches').innerHTML='';
+  clearErr('lookup-err');
   show('s-lookup');
 }
 async function submitContact(){
