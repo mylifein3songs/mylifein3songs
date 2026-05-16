@@ -2107,11 +2107,23 @@ async function doSecondarySearch(){
       return;
     }
     
-    // Filter by name (case-insensitive, partial match)
+    // Filter by name (case-insensitive, matches any word/part of name)
     const nameLower = name.toLowerCase();
-    const matches = data.filter(user => 
-      user.name && user.name.toLowerCase().includes(nameLower)
-    );
+    const searchWords = nameLower.split(/\s+/).filter(w => w.length > 0);
+    const matches = data.filter(user => {
+      if(!user.name) return false;
+      const userNameLower = user.name.toLowerCase();
+      const userWords = userNameLower.split(/\s+/).filter(w => w.length > 0);
+      
+      // Match 1: Full substring (e.g., "nina simone" or "simone" in "Nina Simone")
+      if(userNameLower.includes(nameLower)) return true;
+      
+      // Match 2: All search words must match the start of at least one user word
+      // This allows "Rob Manning" to find "Robert Manning"
+      return searchWords.every(searchWord => 
+        userWords.some(userWord => userWord.startsWith(searchWord))
+      );
+    });
     
     // Clear error and display results
     clearErr('lookup-err');
