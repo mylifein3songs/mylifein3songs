@@ -2384,6 +2384,16 @@ function signOut(){
       if(hash==='s-stats')renderStats();
       if(hash==='s-admin')renderAdmin();
       if(hash==='s-landing')refreshLandingForUser();
+      if(hash==='s-lookup'){
+        document.getElementById('lk-email').value='';
+        document.getElementById('lk-dob').value='';
+        document.getElementById('lk-country').value='';
+        document.getElementById('lk-name').value='';
+        document.getElementById('secondary-search-results').style.display='none';
+        document.getElementById('secondary-matches').innerHTML='';
+        populateCountrySelect('lk-country','');
+        clearErr('lookup-err');
+      }
       return;
     }
 
