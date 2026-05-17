@@ -2241,6 +2241,7 @@ function clearLookupAndShow(){
   document.getElementById('secondary-search-results').style.display='none';
   document.getElementById('secondary-matches').innerHTML='';
   clearErr('lookup-err');
+  populateCountrySelect('lk-country','');
   show('s-lookup');
 }
 async function submitContact(){
