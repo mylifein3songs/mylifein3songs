@@ -2083,6 +2083,13 @@ async function doSecondarySearch(){
     return;
   }
   
+  // Minimum 3 characters requirement
+  if(name.length < 3){
+    err('lookup-err', 'Please enter at least 3 characters to search.');
+    resultsDiv.style.display = 'none';
+    return;
+  }
+  
   // Show loading state
   resultsDiv.style.display = 'block';
   matchesDiv.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--mid)">Searching...</div>';
@@ -2107,23 +2114,11 @@ async function doSecondarySearch(){
       return;
     }
     
-    // Filter by name (case-insensitive, matches any word/part of name)
+    // Filter by name (case-insensitive, partial match)
     const nameLower = name.toLowerCase();
-    const searchWords = nameLower.split(/\s+/).filter(w => w.length > 0);
-    const matches = data.filter(user => {
-      if(!user.name) return false;
-      const userNameLower = user.name.toLowerCase();
-      const userWords = userNameLower.split(/\s+/).filter(w => w.length > 0);
-      
-      // Match 1: Full substring (e.g., "nina simone" or "simone" in "Nina Simone")
-      if(userNameLower.includes(nameLower)) return true;
-      
-      // Match 2: All search words must match the start of at least one user word
-      // This allows "Rob Manning" to find "Robert Manning"
-      return searchWords.every(searchWord => 
-        userWords.some(userWord => userWord.startsWith(searchWord))
-      );
-    });
+    const matches = data.filter(user => 
+      user.name && user.name.toLowerCase().includes(nameLower)
+    );
     
     // Clear error and display results
     clearErr('lookup-err');
@@ -2136,7 +2131,7 @@ async function doSecondarySearch(){
     // Sort by name
     matches.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
-    // Display matches in scrollable dropdown
+    // Display matches with 100-result limit and show more option
     displaySecondaryMatches(matches, matchesDiv);
     
   } catch(e){
