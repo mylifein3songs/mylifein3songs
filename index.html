@@ -2390,6 +2390,13 @@ function signOut(){
 }
 // Initialize app
 (async function initApp(){
+  // Wait for Supabase to be ready
+  let retries = 0;
+  while (!window.supabase_client && retries < 50) {
+    await new Promise(r => setTimeout(r, 100));
+    retries++;
+  }
+  
   await loadState();
   refreshLandingForUser();
   
