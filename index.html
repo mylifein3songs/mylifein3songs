@@ -813,6 +813,15 @@
         <div class="share-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.741l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></div>
         <span class="share-label">X / Twitter</span>
       </a>
+      <!-- Add this to your share-grid -->
+<a class="share-btn" onclick="openInstagramShareModal()" style="cursor: pointer;">
+  <div class="share-icon">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+    </svg>
+  </div>
+  <span class="share-label">Share</span>
+</a>
       <a class="share-btn" href="https://www.instagram.com" target="_blank" rel="noopener">
         <div class="share-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></div>
         <span class="share-label">Instagram</span>
@@ -831,7 +840,35 @@
     <button class="share-dismiss" id="modal-dismiss" onclick="closeShare()">Maybe later &mdash; take me to my songs</button>
   </div>
 </div>
-
+<div class="modal-overlay" id="instagram-share-modal" onclick="if(event.target===this)closeInstagramShare()" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-disc">&#9834;</div>
+      <div class="modal-title">Share Your Funeral Songs</div>
+      <div class="modal-sub">Download and share your song choices</div>
+    </div>
+    <div style="border-radius:8px;overflow:hidden;background:#f5f5f5;margin-bottom:1rem">
+      <canvas id="instagram-preview-canvas" style="display:block;width:100%;height:auto;background:#fff"></canvas>
+    </div>
+    <div style="font-size:12px;color:#4A5568;line-height:1.6;margin-bottom:1rem;padding:12px;background:#FAF8F5;border-radius:6px;border-left:3px solid #E8A042">
+      <strong>📐 Perfect for:</strong> Instagram Stories, WhatsApp, Facebook, Twitter, and more
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem">
+      <button onclick="downloadInstagramImage()" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">📥 Download Image</button>
+      <button onclick="shareToSocialMedia('copy')" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">🔗 Copy Link</button>
+    </div>
+    <div style="margin-bottom:1rem">
+      <div style="font-size:12px;font-weight:600;color:#1E2A4A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Share Link To:</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="shareToSocialMedia('whatsapp')" style="background:#25D366;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">💬 WhatsApp</button>
+        <button onclick="shareToSocialMedia('facebook')" style="background:#1877F2;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">f Facebook</button>
+        <button onclick="shareToSocialMedia('twitter')" style="background:#000;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">𝕏 Twitter</button>
+        <button onclick="shareToSocialMedia('email')" style="background:#EA4335;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">✉️ Email</button>
+      </div>
+    </div>
+    <button onclick="closeInstagramShare()" style="width:100%;background:#E8E4DC;color:#1E2A4A;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Close</button>
+  </div>
+</div>
 <script>
 
 // ── Supabase Configuration ── 
@@ -2431,5 +2468,304 @@ function signOut(){
   })();
 })();
 </script>
+// ─────────────────────────────────────────────────────────────────────────
+// INSTAGRAM STORIES SHARE INTEGRATION - TEMPLATE VERSION
+// Uses custom PNG template with artwork overlays
+//
+// To use: 
+// 1. Upload insta_story_template.png to your static assets folder
+// 2. Update the templateUrl in generateInstagramPreview() to match
+// ─────────────────────────────────────────────────────────────────────────
+
+// Global variable for Instagram share data
+let instagramShareData = null;
+
+/**
+ * Open Instagram Stories share modal
+ * Shows a preview of the shareable image and download button
+ */
+function openInstagramShareModal() {
+  const user = state.currentUser ? state.db[state.currentUser] : null;
+  
+  if (!user || !user.songs || !user.songs.some(s => s)) {
+    showMessage('Please save your songs first!', 'error');
+    return;
+  }
+
+  // Prepare share data
+  instagramShareData = {
+    user: user,
+    songs: user.songs,
+    userName: user.name ? user.name.split(' ')[0] : ''
+  };
+
+  // Show modal
+  const modal = document.getElementById('instagram-share-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+    generateInstagramPreview();
+  }
+}
+
+/**
+ * Generate the Instagram Stories image using the template
+ */
+function generateInstagramPreview() {
+  if (!instagramShareData) return;
+
+  const canvas = document.getElementById('instagram-preview-canvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const width = 1080;
+  const height = 1920;
+  
+  canvas.width = width;
+  canvas.height = height;
+
+  // Load and draw the template background
+  const templateImg = new Image();
+  templateImg.crossOrigin = 'anonymous';
+  
+  templateImg.onload = () => {
+    // Draw template as background - scale it to fit our canvas
+    // Template is 941×1672, we need 1080×1920
+    const scaleX = width / 941;
+    const scaleY = height / 1672;
+    ctx.drawImage(templateImg, 0, 0, width, height);
+
+    // Now overlay the three album artworks on the white squares
+    const songs = instagramShareData.songs;
+    
+    // Define positions for the three white squares (scaled to 1080×1920)
+    // These are approximate positions - adjust based on your template
+    const artworkSize = 240;
+    const artworkPositions = [
+      { x: 100, y: 370, size: artworkSize },   // Top square
+      { x: 100, y: 780, size: artworkSize },   // Middle square
+      { x: 100, y: 1190, size: artworkSize }   // Bottom square
+    ];
+
+    // Load and draw artwork images
+    const artworkPromises = songs.map((song, i) => {
+      return new Promise((resolve) => {
+        if (!song || !song.artwork) {
+          resolve();
+          return;
+        }
+
+        const pos = artworkPositions[i];
+        if (!pos) {
+          resolve();
+          return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        img.onload = () => {
+          // Draw with rounded corners to match template style
+          ctx.save();
+          ctx.beginPath();
+          roundRect(ctx, pos.x, pos.y, pos.size, pos.size, 8);
+          ctx.clip();
+          ctx.drawImage(img, pos.x, pos.y, pos.size, pos.size);
+          ctx.restore();
+
+          resolve();
+        };
+        
+        img.onerror = () => {
+          // If image fails to load, just continue
+          resolve();
+        };
+        
+        img.src = song.artwork;
+      });
+    });
+
+    Promise.all(artworkPromises).then(() => {
+      // All artwork loaded, preview is complete
+    });
+  };
+  
+  templateImg.onerror = () => {
+    // Fallback if template can't load - show error message
+    ctx.fillStyle = '#1E2A4A';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#FAF8F5';
+    ctx.font = '32px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Template image could not load.', width / 2, height / 2 - 20);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('Make sure insta_story_template.png is uploaded.', width / 2, height / 2 + 20);
+  };
+  
+  // IMPORTANT: Update this URL to where your template file is hosted
+  // Examples:
+  // - Relative path: '/images/insta_story_template.png'
+  // - CDN: 'https://yourcdn.com/insta_story_template.png'
+  // - Base64: 'data:image/png;base64,...'
+  const templateUrl = 'https://mylifein3songs.com/insta_story_template.png'; // ← UPDATE THIS PATH
+  
+  templateImg.src = templateUrl;
+}
+
+/**
+ * Download the Instagram Stories image
+ */
+function downloadInstagramImage() {
+  const canvas = document.getElementById('instagram-preview-canvas');
+  const link = document.createElement('a');
+  link.download = 'my-funeral-songs-instagram-story.png';
+  link.href = canvas.toDataURL('image/png', 1.0);
+  link.click();
+  showMessage('Image downloaded! Share it anywhere.', 'success');
+}
+
+/**
+ * Share to various platforms
+ */
+function shareToSocialMedia(platform) {
+  const canvas = document.getElementById('instagram-preview-canvas');
+  const imageDataUrl = canvas.toDataURL('image/png', 1.0);
+  
+  // Get the website URL
+  const websiteUrl = 'https://mylifein3songs.com';
+  const text = 'I just chose my funeral songs! Record yours at ' + websiteUrl;
+  
+  switch(platform) {
+    case 'whatsapp':
+      // WhatsApp doesn't support image sharing via URL, but we can share text
+      const whatsappText = encodeURIComponent(text + '\n\n(Download the image from the app)');
+      window.open(`https://wa.me/?text=${whatsappText}`, '_blank');
+      break;
+      
+    case 'facebook':
+      // Facebook share dialog
+      const facebookUrl = encodeURIComponent(websiteUrl);
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${facebookUrl}`, '_blank', 'width=600,height=400');
+      break;
+      
+    case 'twitter':
+      const twitterText = encodeURIComponent('I just chose my funeral songs! Check out mylifein3songs.com');
+      window.open(`https://twitter.com/intent/tweet?text=${twitterText}&url=${encodeURIComponent(websiteUrl)}`, '_blank');
+      break;
+      
+    case 'email':
+      const subject = encodeURIComponent('I chose my funeral songs');
+      const body = encodeURIComponent('I just chose my funeral songs on My Life in 3 Songs.\n\nCheck it out: ' + websiteUrl);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      break;
+      
+    case 'copy':
+      // Copy the website URL to clipboard
+      navigator.clipboard.writeText(websiteUrl).then(() => {
+        showMessage('Link copied to clipboard!', 'success');
+      });
+      break;
+  }
+}
+
+/**
+ * Close Instagram share modal
+ */
+function closeInstagramShare() {
+  const modal = document.getElementById('instagram-share-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.style.display = 'none';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// HELPER FUNCTIONS
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Draw a rounded rectangle
+ */
+function roundRect(ctx, x, y, w, h, r) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/**
+ * Wrap text to multiple lines if needed
+ */
+function wrapInstagramText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+
+  words.forEach(word => {
+    const testLine = line + word + ' ';
+    const metrics = ctx.measureText(testLine);
+
+    if (metrics.width > maxWidth && line) {
+      ctx.fillText(line, x, y);
+      line = word + ' ';
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  });
+
+  if (line) {
+    ctx.fillText(line, x, y);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// HTML TO ADD TO YOUR index.html
+// 
+// 1. Add this button to the share-grid in your modal:
+//
+//    <a class="share-btn" onclick="openInstagramShareModal()" style="cursor: pointer;">
+//      <div class="share-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></div>
+//      <span class="share-label">Stories</span>
+//    </a>
+//
+// 2. Add this modal HTML after the closing </div> of share-modal:
+//
+// <div class="modal-overlay" id="instagram-share-modal" onclick="if(event.target===this)closeInstagramShare()" style="display:none">
+//   <div class="modal">
+//     <div class="modal-header">
+//       <div class="modal-disc">&#9834;</div>
+//       <div class="modal-title">Share Your Funeral Songs</div>
+//       <div class="modal-sub">Download and share your song choices</div>
+//     </div>
+//     <div style="border-radius:8px;overflow:hidden;background:#f5f5f5;margin-bottom:1rem">
+//       <canvas id="instagram-preview-canvas" style="display:block;width:100%;height:auto;background:#fff"></canvas>
+//     </div>
+//     <div style="font-size:12px;color:#4A5568;line-height:1.6;margin-bottom:1rem;padding:12px;background:#FAF8F5;border-radius:6px;border-left:3px solid #E8A042">
+//       <strong>📐 Perfect for:</strong> Instagram Stories, WhatsApp, Facebook, Twitter, and more
+//     </div>
+//     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem">
+//       <button onclick="downloadInstagramImage()" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">📥 Download Image</button>
+//       <button onclick="shareToSocialMedia('copy')" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">🔗 Copy Link</button>
+//     </div>
+//     <div style="margin-bottom:1rem">
+//       <div style="font-size:12px;font-weight:600;color:#1E2A4A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Share Link To:</div>
+//       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+//         <button onclick="shareToSocialMedia('whatsapp')" style="background:#25D366;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">💬 WhatsApp</button>
+//         <button onclick="shareToSocialMedia('facebook')" style="background:#1877F2;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">f Facebook</button>
+//         <button onclick="shareToSocialMedia('twitter')" style="background:#000;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">𝕏 Twitter</button>
+//         <button onclick="shareToSocialMedia('email')" style="background:#EA4335;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">✉️ Email</button>
+//       </div>
+//     </div>
+//     <button onclick="closeInstagramShare()" style="width:100%;background:#E8E4DC;color:#1E2A4A;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Close</button>
+//   </div>
+// </div>
+//
+// ─────────────────────────────────────────────────────────────────────────
+  
 </body>
 </html>
