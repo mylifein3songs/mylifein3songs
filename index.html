@@ -2398,6 +2398,10 @@ function signOut(){
   }
   
   await loadState();
+  
+  // Small delay to ensure state.db is fully populated
+  await new Promise(r => setTimeout(r, 100));
+  
   refreshLandingForUser();
   
   // Restore page on refresh using URL path (or hash, for backwards compatibility)
