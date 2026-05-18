@@ -1616,7 +1616,7 @@ function goEdit(){initPickScreen(true);show('s-pick');window.scrollTo({top:0,beh
 
 let pendingEmailChange={newEmail:null,code:null,pendingDetails:null};
 
-function saveDetails(){
+async function saveDetails(){
   clearErr('edit-details-err');
   const name=document.getElementById('ed-name').value.trim();
   const newEmail=document.getElementById('ed-email').value.trim().toLowerCase();
@@ -1635,8 +1635,26 @@ function saveDetails(){
     if(state.db[newEmail]){err('edit-details-err','That email address is already registered to another account.');return;}
     const code=randCode();
     pendingEmailChange={newEmail,code,pendingDetails:{name,dob,country,city}};
+    
+    // SEND OTP EMAIL
+    try {
+      const response=await fetch('/api/send-otp',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:newEmail,code:code,purpose:'email-change'})
+      });
+      if(!response.ok){
+        err('edit-details-err','Could not send verification email. Please try again.');
+        return;
+      }
+    } catch(e){
+      console.error('Failed to send verification email:',e);
+      err('edit-details-err','Could not send verification email. Please try again.');
+      return;
+    }
+    
     buildOTP('otp-email-inputs');
-    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
+    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>. Check your email inbox (and spam folder).</div>');
     clearErr('email-verify-err');
     document.getElementById('edit-details-box').style.display='none';
     document.getElementById('email-verify-box').style.display='block';
@@ -1691,12 +1709,12 @@ async function applyDetailsSave(details,newEmail){
     console.error('Error in applyDetailsSave:',e);
   }
 }
-function confirmEmailChange(){
+async function confirmEmailChange(){
   if(getOTP('otp-email-inputs')!==pendingEmailChange.code){
     setEl('email-verify-err','<div class="msg error">Incorrect code. Please try again.</div>');return;
   }
   const ne=pendingEmailChange.newEmail;
-  applyDetailsSave(pendingEmailChange.pendingDetails,ne);
+  await applyDetailsSave(pendingEmailChange.pendingDetails,ne);
   document.getElementById('ed-email').value=state.currentUser;
   pendingEmailChange={newEmail:null,code:null,pendingDetails:null};
 }
