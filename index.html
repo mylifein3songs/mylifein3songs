@@ -2435,22 +2435,30 @@ function signOut(){
     }
 
     // Auth-required screens — only restore if logged in
-    if(state.currentUser&&state.db[state.currentUser]){
-      const user=state.db[state.currentUser];
-      if(hash==='s-saved'&&user.songs&&user.songs.length>0){
-        renderMyRecord();
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-        document.getElementById('s-saved').classList.add('active');
-      } else if(hash==='s-pick'){
-        initPickScreen(!!(user.songs&&user.songs.length>0));
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-        document.getElementById('s-pick').classList.add('active');
-      } else if(hash==='s-stats'){
-        renderStats();
-        document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-        document.getElementById('s-stats').classList.add('active');
+    // First, make sure user data is loaded from Supabase
+    if(state.currentUser){
+      let waitCount = 0;
+      while(!state.db[state.currentUser] && waitCount < 30) {
+        await new Promise(r => setTimeout(r, 100));
+        waitCount++;
       }
-      // All other auth screens (verify etc.) fall back to landing on refresh
+      
+      if(state.db[state.currentUser]){
+        const user=state.db[state.currentUser];
+        if(hash==='s-saved'&&user.songs&&user.songs.length>0){
+          renderMyRecord();
+          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+          document.getElementById('s-saved').classList.add('active');
+        } else if(hash==='s-pick'){
+          initPickScreen(!!(user.songs&&user.songs.length>0));
+          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+          document.getElementById('s-pick').classList.add('active');
+        } else if(hash==='s-stats'){
+          renderStats();
+          document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+          document.getElementById('s-stats').classList.add('active');
+        }
+      }
     }
     // If not logged in and hash is an auth screen, stay on landing (default)
   })();
