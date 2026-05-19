@@ -1866,7 +1866,7 @@ function pickSong(id,zone){
     return '<button class="btn" style="'+style+'" onclick="confirmAddSong(\''+id+'\','+i+',\''+zone+'\')">'+label+'</button>';
   }).join('');
   previewEl.innerHTML='<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--light)">'+iframeHtml+addHtml+'</div>';
-  const me=document.getElementById('manual-entry-'+(zone||'top'));if(me)me.style.display='none';
+  // Manual entry removed
 }
 
 function confirmAddSong(id,slotIndex,zone){
@@ -1888,8 +1888,7 @@ function confirmReplaceSong(id,zone){
   renderSlots();
 }
 
-function clearSearchAndPreview(zone){previewSongId=null;previewZone=null;const me=document.getElementById('manual-entry-'+(zone||'top'));if(me)me.style.display='';
-  setEl('search-results-top','');setEl('search-preview-top','');
+function clearSearchAndPreview(zone){previewSongId=null;previewZone=null;  setEl('search-results-top','');setEl('search-preview-top','');
   setEl('search-results-mid','');setEl('search-preview-mid','');
   const qTop=document.getElementById('search-q-top');if(qTop)qTop.value='';
   const qMain=document.getElementById('search-q');if(qMain)qMain.value='';
