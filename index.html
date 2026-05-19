@@ -474,16 +474,7 @@
       <label>City <span class="optional-tag">(optional)</span></label>
       <input type="text" id="ed-city" placeholder="e.g. London">
       <button class="btn amber" style="width:auto;padding:8px 20px;font-size:13px;margin-top:0" onclick="saveDetails()">Save Details</button>
-      <button class="btn" style="width:auto;padding:8px 16px;font-size:13px;margin-top:4px;margin-left:8px;background:var(--red)" onclick="confirmDeleteAccount()">Delete Account</button>
       <div class="details-saved-ok" id="details-saved-ok">&#10003; Details updated successfully</div>
-    </div>
-
-    <!-- Delete account confirmation -->
-    <div class="paper-box" id="delete-confirm-box" style="display:none;margin-top:1rem;border-color:var(--red)">
-      <div class="paper-box-title" style="color:var(--red)">Delete Account</div>
-      <p class="small" style="margin-bottom:1rem">Are you sure? This will permanently delete your account and all your song choices. This cannot be undone.</p>
-      <button class="btn" style="background:var(--red);width:auto;padding:8px 20px;font-size:13px;margin-top:0" onclick="doDeleteAccount()">Yes, delete my account</button>
-      <button class="btn secondary" style="width:auto;padding:8px 16px;font-size:13px;margin-top:4px;margin-left:8px" onclick="document.getElementById('delete-confirm-box').style.display='none'">Cancel</button>
     </div>
 
     <!-- Email change verification panel -->
@@ -783,6 +774,7 @@
         <option value="partnership">Partnership Enquiry</option>
         <option value="report-abuse">Report Abuse</option>
         <option value="data-request">Data / Privacy Request</option>
+        <option value="delete-account">Delete Your Account</option>
         <option value="other">Other</option>
       </select>
       <label>Message</label>
