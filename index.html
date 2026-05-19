@@ -346,7 +346,7 @@
     <div class="paper-box">
       <div id="signup-err"></div>
       <label>Full Name</label>
-      <input type="text" id="su-name" placeholder="e.g. Nina Simone">
+      <input type="text" id="su-name" placeholder="e.g. John Smith">
       <label>Email Address</label>
       <input type="email" id="su-email" placeholder="your@email.com">
       <label>Date of Birth</label>
@@ -575,7 +575,7 @@
         <label>Country</label>
         <select id="lk-country"><option value="">&mdash; Select country &mdash;</option></select>
         <label>Name (or partial name)</label>
-        <input type="text" id="lk-name" placeholder="e.g. Nina or Nina Simone" onkeydown="if(event.key==='Enter')doSecondarySearch()">
+        <input type="text" id="lk-name" placeholder="e.g. John or John Smith" onkeydown="if(event.key==='Enter')doSecondarySearch()">
         <button class="btn" onclick="doSecondarySearch()">Search</button>
       </div>
       
@@ -2150,7 +2150,7 @@ async function doSecondarySearch(){
       const userNameLower = user.name.toLowerCase();
       const userWords = userNameLower.split(/\s+/).filter(w => w.length > 0);
       
-      // Match 1: Full substring (e.g., "nina simone" or "simone" in "Nina Simone")
+      // Match 1: Full substring (e.g., "john smith" or "smith" in "John Smith")
       if(userNameLower.includes(nameLower)) return true;
       
       // Match 2: All search words must match the start of at least one user word
