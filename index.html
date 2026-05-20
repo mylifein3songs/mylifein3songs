@@ -559,7 +559,7 @@
           <strong>Search by Name & Country</strong>
         </div>
         <label>Name (or partial name)</label>
-        <input type="text" id="lk-name" placeholder="e.g. Nina or Nina Simone" onkeydown="if(event.key==='Enter')doSecondarySearch()">
+        <input type="text" id="lk-name" placeholder="e.g. John or John Smith" onkeydown="if(event.key==='Enter')doSecondarySearch()">
         <label>Country</label>
         <select id="lk-country"><option value="">&mdash; Select country &mdash;</option></select>
         <button class="btn" onclick="doSecondarySearch()">Search</button>
@@ -569,6 +569,12 @@
       <div style="text-align:center;margin:1.5rem 0;position:relative;">
         <div style="border-top:1px solid var(--light);margin-bottom:-.6rem"></div>
         <span style="background:var(--paper);padding:0 .6rem;color:var(--mid);font-size:11px;letter-spacing:1px">OR</span>
+      </div>
+
+        <!-- Secondary search results dropdown (scrollable) -->
+      <div id="secondary-search-results" style="display:none;margin-top:1rem">
+        <div style="font-size:12px;color:var(--mid);margin-bottom:.8rem;font-weight:600">Matching Records:</div>
+        <div id="secondary-matches" style="border:1.5px solid var(--dark);max-height:360px;overflow-y:auto;background:#fff;border-radius:6px"></div>
       </div>
       
       <!-- SECONDARY SEARCH: Email + DOB -->
@@ -582,12 +588,7 @@
         <input type="date" id="lk-dob" max="2099-12-31">
         <button class="btn" onclick="doLookup()">Find Their Songs</button>
       </div>
-      
-      <!-- Secondary search results dropdown (scrollable) -->
-      <div id="secondary-search-results" style="display:none;margin-top:1rem">
-        <div style="font-size:12px;color:var(--mid);margin-bottom:.8rem;font-weight:600">Matching Records:</div>
-        <div id="secondary-matches" style="border:1.5px solid var(--dark);max-height:360px;overflow-y:auto;background:#fff;border-radius:6px"></div>
-      </div>
+    
     </div>
     <p class="text-center mt"><span class="link" onclick="show('s-landing')">&larr; Back</span></p>
   </div>
