@@ -2235,16 +2235,78 @@ async function loadSecondaryResult(email){
 }
 
 // ── Stats ──────────────────────────────────────────────────────────────
-function renderStats(){
-  setEl('stats-intro', 'Thanks for your interest in our community stats!');
-  
+async function renderStats(){
+  setEl('stats-intro','Loading community stats…');
+  setEl('stats-content','');
+  try{
+    const {data,error}=await window.supabase_client.from('users').select('name,dob,country,city,songs,views');
+    if(error)throw error;
+    (data||[]).forEach(u=>{if(u.email)state.db[u.email]=u;});
+  }catch(e){
+    console.error('Stats load error:',e);
+    setEl('stats-intro','Could not load stats. Please try again later.');
+    return;
+  }
+  const users=Object.values(state.db);
+  const withSongs=users.filter(u=>u.songs&&u.songs.length>0);
+  const ages=users.map(u=>ageFromDOB(u.dob)).filter(a=>a!==null);
+  const avgAge=ages.length?Math.round(ages.reduce((a,b)=>a+b,0)/ages.length):null;
+
+  // Overall top songs (all slots combined)
+  const songCount={};
+  withSongs.forEach(u=>u.songs.forEach(s=>{
+    if(!s)return;
+    const k=s.title+'|||'+s.artist;
+    if(!songCount[k])songCount[k]={count:0,title:s.title,artist:s.artist};
+    songCount[k].count++;
+  }));
+  const topSongs=Object.values(songCount).sort((a,b)=>b.count-a.count).slice(0,10);
+
+  // Per-slot top songs
+  const slotCounts=[{},{},{}];
+  withSongs.forEach(u=>u.songs.forEach((s,i)=>{
+    if(!s)return;
+    const k=s.title+'|||'+s.artist;
+    if(!slotCounts[i][k])slotCounts[i][k]={count:0,title:s.title,artist:s.artist};
+    slotCounts[i][k].count++;
+  }));
+  const topBySlot=slotCounts.map(sc=>Object.values(sc).sort((a,b)=>b.count-a.count).slice(0,10));
+
+  const artistCount={};
+  withSongs.forEach(u=>u.songs.forEach(s=>{if(!s)return;artistCount[s.artist]=(artistCount[s.artist]||0)+1;}));
+  const topArtists=Object.entries(artistCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const countryCount={};
+  users.forEach(u=>{if(u.country)countryCount[u.country]=(countryCount[u.country]||0)+1;});
+  const topCountries=Object.entries(countryCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const cityCount={};
+  users.forEach(u=>{if(u.city&&u.city.trim())cityCount[u.city.trim()]=(cityCount[u.city.trim()]||0)+1;});
+  const topCities=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const uniqueSongCount=Object.keys(songCount).length;
+  const countryList=Object.keys(countryCount);
+
+  setEl('stats-intro','Across <strong>'+users.length+'</strong> registered user'+(users.length!==1?'s':'')+' from <strong>'+countryList.length+'</strong> countr'+(countryList.length===1?'y':'ies')+', here are the most popular funeral song choices. Stats update in real time.');
+
+  function rankList(items,labelFn,countFn){
+    if(!items.length)return'<p class="no-data">No data yet &mdash; be the first!</p>';
+    const mx=countFn(items[0]);
+    return items.map((item,i)=>'<div class="stat-row"><span class="stat-rank">'+(i+1)+'</span><span class="stat-name">'+labelFn(item)+'</span><div class="stat-bar-wrap"><div class="stat-bar" style="width:'+Math.round((countFn(item)/mx)*100)+'%"></div></div><span class="stat-count">'+countFn(item)+'</span></div>').join('');
+  }
+  function songLabel(s){return'<strong>'+escHtml(s.title)+'</strong><span style="color:var(--mid);font-size:11px"> &mdash; '+escHtml(s.artist)+'</span>';}
+
   setEl('stats-content',
-    '<div style="text-align: center; padding: 2rem 1rem; color: var(--mid); line-height: 1.8;">'
-    +'<p style="font-size: 18px; margin-bottom: 1rem;">📊 Coming Soon</p>'
-    +'<p>We don\'t have enough data to show community stats at the current time, but we\'re growing every day!</p>'
-    +'<p style="font-size: 13px; margin-top: 1.5rem; font-style: italic;">Once we have more users in our community, we\'ll be able to share fascinating insights about the most popular funeral songs, artists, and locations.</p>'
-    +'<p style="margin-top: 1rem;"><strong>Please share My Life in 3 Songs</strong> with others to help build our community! 🎵</p>'
+    '<div class="stat-meta">'
+    +'<div class="stat-meta-item"><div class="stat-meta-val">'+users.length+'</div><div class="stat-meta-label">Registered users</div></div>'
+    +'<div class="stat-meta-item"><div class="stat-meta-val">'+uniqueSongCount+'</div><div class="stat-meta-label">Unique songs chosen</div></div>'
+    +'<div class="stat-meta-item"><div class="stat-meta-val">'+(avgAge!==null?avgAge+'&thinsp;yrs':'&mdash;')+'</div><div class="stat-meta-label">Average age</div></div>'
     +'</div>'
+    +'<div class="stat-section" style="margin-top:1.4rem"><div class="stat-section-title">Top 10 Songs Overall</div>'+rankList(topSongs,songLabel,s=>s.count)+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 10 &mdash; Entrance Music</div>'+rankList(topBySlot[0],songLabel,s=>s.count)+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 10 &mdash; Reflection Music</div>'+rankList(topBySlot[1],songLabel,s=>s.count)+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 10 &mdash; Exit Music</div>'+rankList(topBySlot[2],songLabel,s=>s.count)+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 10 Artists</div>'+rankList(topArtists,a=>escHtml(a[0]),a=>a[1])+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 5 Countries</div>'+rankList(topCountries,a=>escHtml(a[0]),a=>a[1])+'</div>'
+    +'<div class="stat-section"><div class="stat-section-title">Top 5 Cities</div>'+rankList(topCities,a=>escHtml(a[0]),a=>a[1])+'</div>'
   );
 }
 
