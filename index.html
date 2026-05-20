@@ -387,6 +387,7 @@
       </div>
       <div id="search-results-top"></div>
         <div id="search-preview-top"></div>
+        <!--
       <div class="manual-entry" id="manual-entry-top">
         <div class="manual-entry-title">Can&rsquo;t find your song? Add it manually:</div>
         <div class="manual-grid">
@@ -398,7 +399,7 @@
         </div>
         <div id="m-add-btns-top" style="margin-top:6px"></div>
         <div class="manual-err" id="m-err-top">Please enter both a title and artist name.</div>
-      </div>
+      </div> -->
       </div><!-- /search-content-top -->
     </div>
 
@@ -413,6 +414,7 @@
       </div>
       <div id="search-results-mid"></div>
       <div id="search-preview-mid"></div>
+        <!--
       <div class="manual-entry" id="manual-entry-mid">
         <div class="manual-entry-title">Can&rsquo;t find your song? Add it manually:</div>
         <div class="manual-grid">
@@ -425,6 +427,7 @@
         <div id="m-add-btns-mid" style="margin-top:6px"></div>
         <div class="manual-err" id="m-err-mid">Please enter both a title and artist name.</div>
       </div>
+        -->
       </div><!-- /search-content-mid -->
     </div>
 
@@ -1851,7 +1854,7 @@ function refreshAllResults(){
   if(lastResultsMid.length||lastQueryMid)renderResultsInto('search-results-mid','',lastResultsMid);
 }
 function renderResultsInto(cid,fullMsgId,list){
-  if(!list.length){setEl(cid,'<div class="results-list"><div class="result-item" style="opacity:.6"><div class="result-info"><div class="result-sub">No results found. Try a different search, or add it manually below.</div></div></div></div>');return;}
+  if(!list.length){setEl(cid,'<div class="results-list"><div class="result-item" style="opacity:.6"><div class="result-info"><div class="result-sub">No results found. Try a different search term.</div></div></div></div>');return;}
   const zone=cid==='search-results-top'?'top':'mid';
   const takenIds=selectedSongs.filter(Boolean).map(s=>s.id);
   const html=list.map(s=>{
