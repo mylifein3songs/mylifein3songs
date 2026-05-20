@@ -1617,13 +1617,6 @@ function initPickScreen(editing){
   document.getElementById('search-box-mid').style.display=editing?'block':'none';
   setEl('search-results-top','');setEl('search-results-mid','');setEl('search-preview-top','');setEl('search-preview-mid','');
   document.getElementById('search-q').value='';document.getElementById('search-q-mid').value='';
-  ['top','mid'].forEach(z=>{
-    document.getElementById('m-title-'+z).value='';
-    document.getElementById('m-artist-'+z).value='';
-    document.getElementById('m-album-'+z).value='';
-    document.getElementById('m-err-'+z).style.display='none';
-    const mf=document.getElementById('m-full-'+z);if(mf)mf.style.display='none';
-  });
   lastQueryTop='';lastResultsTop=[];lastQueryMid='';lastResultsMid=[];
   renderSlots();updateSaveBtn();
 }
