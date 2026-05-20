@@ -1947,7 +1947,7 @@ async function doSave(){
   const notes=document.getElementById('notes-field').value.trim();
 
   // Guest: hold songs in memory and send them to signup
-  if(!state.currentUser){
+  if(!state.currentUser || !state.db[state.currentUser]){
     pendingSongsForSignup=[...selectedSongs];
     pendingNotesForSignup=notes;
     show('s-signup');
