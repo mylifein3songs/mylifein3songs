@@ -1739,10 +1739,6 @@ function updateSaveBtn(){
   btn.disabled=!some;btn.style.opacity=some?'1':'.4';
   btn.textContent=isEditing?'Save Changes':'Save My Songs';
 }
-function updateSearchVisibility(){
-  // Refresh manual add buttons whenever slot state changes
-  ['top','mid'].forEach(z=>updateManualBtns(z));
-}
 function renderSlots(){
   selectedSongs.forEach((s,i)=>{
     const slotEl=document.getElementById('slot-'+i);
