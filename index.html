@@ -358,7 +358,7 @@
       <input type="text" id="su-city" placeholder="e.g. London">
       <button class="btn" onclick="doSignup()">Send Verification Code</button>
     </div>
-    <p class="text-center mt"><span class="link" onclick="show('s-landing')">&larr; Back</span></p>
+    <p class="text-center mt"><span class="link" onclick="pendingSongsForSignup?show('s-pick'):show('s-landing')">&larr; Back</span></p>
   </div>
 
   <!-- VERIFY signup -->
@@ -1267,7 +1267,7 @@ function refreshLandingForUser(){
     primaryBtn.innerHTML='<button class="btn mt" onclick="goToMyRecord()">&mdash; View My Songs &mdash;</button>';
     authStatus.innerHTML='<p class="text-center mt"><span style="font-size:13px;color:var(--mid)">Signed in as <strong>'+firstName+'</strong> &nbsp;&middot;&nbsp; </span><span class="link" onclick="signOut()" style="font-size:13px">Sign out</span></p>';
   } else {
-    primaryBtn.innerHTML='<button class="btn mt" onclick="show(\'s-signup\')">&mdash; Register your songs &mdash;</button>';
+    primaryBtn.innerHTML='<button class="btn mt" onclick="startPickingAsGuest()">&mdash; Choose your songs &mdash;</button>';
     authStatus.innerHTML='<p class="text-center mt"><span class="link" onclick="show(\'s-login\')">Already registered? Sign in</span></p>';
   }
 }
@@ -1445,15 +1445,15 @@ async function doVerifySignup(){
     // Store session token for future logins
     localStorage.setItem('sessionToken', result.token);
     
-    // Create user object from the API response
+    // Create user object — attach any songs chosen before signup
     const newUser = {
       email: u.email,
       name: u.name,
       dob: u.dob,
       country: u.country,
       city: u.city,
-      songs: null,
-      notes: '',
+      songs: pendingSongsForSignup || null,
+      notes: pendingNotesForSignup || '',
       views: 0,
       last_login: new Date().toISOString()
     };
@@ -1463,9 +1463,22 @@ async function doVerifySignup(){
     state.currentUser = u.email;
     state.pendingUser = null;
     localStorage.setItem('tsoyu_session_email', u.email);
-    
-    initPickScreen(false);
-    show('s-pick');
+
+    // Clear pending song state
+    pendingSongsForSignup = null;
+    pendingNotesForSignup = '';
+
+    if(newUser.songs && newUser.songs.some(Boolean)){
+      // Songs were pre-chosen — save immediately and go to celebration
+      await saveDB();
+      renderMyRecord();
+      show('s-saved');
+      openShareModal('first');
+    } else {
+      // No pre-chosen songs — go to pick screen as before
+      initPickScreen(false);
+      show('s-pick');
+    }
   } catch (e) {
     err('verify-err', 'An error occurred. Please try again.');
     console.error('Verify signup error:', e);
@@ -1606,13 +1619,24 @@ let isEditing=false;
 let lastQueryTop='',lastResultsTop=[];
 let lastQueryMid='',lastResultsMid=[];
 
+// Pending songs/notes held in memory while a guest goes through signup
+let pendingSongsForSignup=null;
+let pendingNotesForSignup='';
+
+function startPickingAsGuest(){
+  selectedSongs=[null,null,null];
+  isEditing=false;
+  initPickScreen(false);
+  show('s-pick');
+}
+
 function initPickScreen(editing){
   isEditing=editing;
-  const user=state.db[state.currentUser];
-  selectedSongs=editing&&user.songs?[...user.songs]:[null,null,null];
+  const user=state.currentUser?state.db[state.currentUser]:null;
+  selectedSongs=editing&&user&&user.songs?[...user.songs]:[null,null,null];
   setEl('pick-heading',editing?'Edit Your Songs':'Choose Your Three Songs');
   setEl('pick-intro','');
-  document.getElementById('notes-field').value=(editing&&user.notes)?user.notes:'';
+  document.getElementById('notes-field').value=(editing&&user&&user.notes)?user.notes:'';
   updateCharCount();
   document.getElementById('search-box-top').style.display=editing?'none':'block';
   document.getElementById('search-box-mid').style.display=editing?'block':'none';
@@ -1921,6 +1945,16 @@ function addManual(zone,slotIndex){
 async function doSave(){
   if(!selectedSongs.some(Boolean))return;
   const notes=document.getElementById('notes-field').value.trim();
+
+  // Guest: hold songs in memory and send them to signup
+  if(!state.currentUser){
+    pendingSongsForSignup=[...selectedSongs];
+    pendingNotesForSignup=notes;
+    show('s-signup');
+    return;
+  }
+
+  // Logged-in user: save immediately as before
   const firstSave=!isEditing;
   state.db[state.currentUser].songs=[...selectedSongs];
   state.db[state.currentUser].notes=notes;
