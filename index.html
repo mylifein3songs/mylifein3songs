@@ -456,7 +456,7 @@
 
     <button class="btn" id="save-btn" onclick="doSave()">Save My Songs</button>
 
-    <p class="text-center mt"><span class="link" onclick="show('s-saved')">&larr; Back to Your Songs</span></p>
+    <p class="text-center mt"><span class="link" onclick="goBackFromPick()">&larr; Back</span></p>
   </div>
 
   <!-- DETAILS (separate screen, accessed from s-saved) -->
@@ -1630,7 +1630,13 @@ function startPickingAsGuest(){
   initPickScreen(false);
   show('s-pick');
 }
-
+function goBackFromPick(){
+  if(selectedSongs.some(Boolean) && !state.currentUser){
+    if(!confirm('Go back? Your selected songs won\'t be saved.'))return;
+  }
+  state.currentUser&&state.db[state.currentUser]?show('s-saved'):show('s-landing');
+}
+  
 function initPickScreen(editing){
   isEditing=editing;
   const user=state.currentUser?state.db[state.currentUser]:null;
