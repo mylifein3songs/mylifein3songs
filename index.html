@@ -1566,8 +1566,7 @@ async function doLogin(){
       }
       
       buildOTP('otp-login-inputs');
-      setEl('verify-login-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code.</div>');
-      show('s-verify-login');
+setEl('verify-login-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code. It can take a minute to arrive &mdash; if you don&rsquo;t see it, please check your spam or junk folder.</div>');      show('s-verify-login');
     } catch (e) {
       err('login-err', 'An error occurred. Please try again.');
       console.error('Send OTP error:', e);
