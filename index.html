@@ -1328,6 +1328,16 @@ function buildOTP(cid){
     inp.addEventListener('keydown',function(e){
       if(e.key==='Backspace'&&!this.value&&this.previousElementSibling)this.previousElementSibling.focus();
     });
+    inp.addEventListener('paste',function(e){
+      e.preventDefault();
+      const digits=(e.clipboardData||window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
+      if(!digits)return;
+      const cells=Array.from(c.children);
+      const start=cells.indexOf(this);
+      digits.split('').forEach(function(d,i){if(cells[start+i])cells[start+i].value=d;});
+      const next=cells[Math.min(start+digits.length,5)];
+      if(next)next.focus();
+    });
     c.appendChild(inp);
   }
 }
