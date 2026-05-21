@@ -379,8 +379,12 @@
     <div class="vinyl-divider" id="pick-heading">Choose Your Three Songs</div>
 
     <!-- Search TOP: new users -->
-    <div class="paper-box" id="search-box-top">
-      <div class="paper-box-title">Search Songs</div>
+    <div class="paper-box-title">Search Songs</div>
+      <div id="welcome-msg" style="background:var(--cream);border-left:3px solid var(--amber);border-radius:6px;padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.6;color:var(--dark)">
+        <strong>Welcome &mdash; you&rsquo;re doing something most people never get around to.</strong><br>
+        Three songs, that&rsquo;s all. Search for your first one below. Future-you (and everyone at the service) will be quietly grateful.
+      </div>
+      <div id="search-content-top">
       <div id="search-content-top">
       <div class="search-row">
         <input type="text" id="search-q" placeholder="Artist or song title&hellip;" onkeydown="if(event.key==='Enter')doSearch()">
@@ -1887,6 +1891,7 @@ async function itunesSearch(q){
 }
 
 async function doSearch(){
+  const w=document.getElementById('welcome-msg'); if(w) w.style.display='none';
   const q=document.getElementById('search-q').value.trim();
   lastQueryTop=q.toLowerCase();
   if(!q){setEl('search-results-top','');lastResultsTop=[];return;}
