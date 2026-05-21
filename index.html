@@ -1431,7 +1431,7 @@ async function doSignup(){
     }
     
     buildOTP('otp-inputs');
-    setEl('verify-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code.</div>');
+    setEl('verify-hint', '<div class="msg info">Check your email at <strong>' + email + '</strong> for your verification code. It can take a minute to arrive &mdash; if you don&rsquo;t see it, please check your spam or junk folder.</div>');
     show('s-verify-signup');
   } catch (e) {
     err('signup-err', 'An error occurred. Please try again.');
@@ -1730,7 +1730,7 @@ function saveDetails(){
     const code=randCode();
     pendingEmailChange={newEmail,code,pendingDetails:{name,dob,country,city}};
     buildOTP('otp-email-inputs');
-    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
+    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>. If it hasn&rsquo;t arrived in a minute, please check your spam or junk folder.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
     clearErr('email-verify-err');
     document.getElementById('edit-details-box').style.display='none';
     document.getElementById('email-verify-box').style.display='block';
