@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 22may 1638 chg ogimage ── -->
+<!-- ── 22may 1638 chg share modal ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -2027,6 +2027,8 @@ function openShareModal(mode){
   const user=state.currentUser?state.db[state.currentUser]:null;
   let shareText,shareUrl,title,sub,dismissTxt;
   if(mode==='first'){
+  openInstagramShareModal();
+  return;
     shareUrl=BASE_URL;
     shareText='I\'ve just recorded my funeral song wishes on My Life in 3 Songs \u2014 so my loved ones will always know. You should too.';
     title='Your songs are saved!';
