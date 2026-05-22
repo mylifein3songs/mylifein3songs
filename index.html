@@ -2027,6 +2027,8 @@ function openShareModal(mode){
   const user=state.currentUser?state.db[state.currentUser]:null;
   let shareText,shareUrl,title,sub,dismissTxt;
   if(mode==='first'){
+  openInstagramShareModal();
+  return;
     shareUrl=BASE_URL;
     shareText='I\'ve just recorded my funeral song wishes on My Life in 3 Songs \u2014 so my loved ones will always know. You should too.';
     title='Your songs are saved!';
