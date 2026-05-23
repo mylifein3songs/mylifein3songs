@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
     console.log('[send-otp] Sending to:', email);
 
     const result = await resend.emails.send({
-      from: 'My Life in 3 Songs <hello@mylifein3songs.com>',
+      from: 'My Life in 3 Songs <noreply@mylifein3songs.com>',
       to: email,
       subject: 'Your verification code',
       html: `
