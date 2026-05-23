@@ -80,12 +80,66 @@
   }
 
   #toast{
-    position:fixed;left:50%;bottom:42px;transform:translateX(-50%);z-index:25;
+    position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:25;
     background:rgba(0,0,0,.55);backdrop-filter:blur(10px);color:#fff;
     padding:12px 20px;border-radius:100px;font-size:14px;font-weight:600;
     text-align:center;max-width:88vw;transition:opacity .4s;text-shadow:0 1px 3px #000;
   }
   .err{color:#ffd2d2}
+
+  /* speech bubble shown when the puppet talks */
+  #bubble{
+    position:fixed;left:50%;top:84px;transform:translateX(-50%) scale(.8);
+    z-index:24;max-width:80vw;opacity:0;pointer-events:none;
+    background:#fff;color:#161620;font-weight:600;font-size:16px;line-height:1.3;
+    padding:14px 20px;border-radius:20px;text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    transition:opacity .25s, transform .25s;
+  }
+  #bubble.show{opacity:1;transform:translateX(-50%) scale(1)}
+  #bubble:after{
+    content:"";position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);
+    border:12px solid transparent;border-top-color:#fff;border-bottom:0;
+  }
+
+  /* bottom control bar */
+  #bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:22;
+    display:flex;gap:12px;justify-content:center;align-items:center;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg, rgba(0,0,0,.5), transparent);
+  }
+  .pill{
+    border:none;border-radius:100px;font-family:'Bungee',sans-serif;
+    font-size:15px;letter-spacing:.3px;padding:15px 26px;color:#fff;cursor:pointer;
+    transition:transform .08s, filter .1s;
+  }
+  .pill:active{transform:scale(.94)}
+  #talk{background:linear-gradient(110deg,var(--pop),#ff7a3a);box-shadow:0 6px 18px rgba(255,59,107,.4)}
+  #tune{background:rgba(255,255,255,.16);backdrop-filter:blur(10px);font-size:20px;padding:15px 20px}
+
+  /* calibration sheet */
+  #cal{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:rgba(18,16,26,.92);backdrop-filter:blur(20px);
+    border-radius:22px 22px 0 0;padding:18px 22px calc(24px + env(safe-area-inset-bottom));
+    color:#fff;transform:translateY(110%);transition:transform .32s cubic-bezier(.3,.9,.3,1);
+    box-shadow:0 -10px 40px rgba(0,0,0,.5);max-height:78vh;overflow-y:auto;
+  }
+  #cal.open{transform:translateY(0)}
+  #cal h2{font-family:'Bungee',sans-serif;font-size:18px;margin-bottom:4px;
+          background:linear-gradient(92deg,var(--pop),var(--pop2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  #cal .sub{font-size:12.5px;opacity:.6;margin-bottom:14px}
+  .row{margin:14px 0}
+  .row label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:7px}
+  .row label span{opacity:.55;font-weight:400}
+  .row input[type=range]{width:100%;accent-color:var(--pop);height:26px}
+  #cal .foot{display:flex;gap:10px;margin-top:18px}
+  #cal .foot button{flex:1;border:none;border-radius:14px;padding:14px;font-weight:700;font-size:14px;cursor:pointer}
+  #calDone{background:linear-gradient(110deg,var(--pop),#ff7a3a);color:#fff}
+  #calReset{background:rgba(255,255,255,.14);color:#fff}
+  #scrim{position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:opacity .3s}
+  #scrim.show{opacity:1;pointer-events:auto}
 </style>
 
 <div id="stage">
@@ -99,6 +153,52 @@
 </div>
 
 <div id="toast" style="display:none"></div>
+<div id="bubble"></div>
+
+<div id="bar" style="display:none">
+  <button class="pill" id="talk">💬 Talk</button>
+  <button class="pill" id="tune">⚙︎</button>
+</div>
+
+<div id="scrim"></div>
+<div id="cal">
+  <h2>Calibrate</h2>
+  <div class="sub">Adjust while watching your hand — changes apply live.</div>
+
+  <div class="row">
+    <label>Mouth position <span id="v_mpos"></span></label>
+    <input type="range" id="s_mpos" min="0" max="100" value="60">
+  </div>
+  <div class="row">
+    <label>Mouth height (up/down) <span id="v_mup"></span></label>
+    <input type="range" id="s_mup" min="-30" max="40" value="10">
+  </div>
+  <div class="row">
+    <label>Mouth size <span id="v_msize"></span></label>
+    <input type="range" id="s_msize" min="50" max="130" value="85">
+  </div>
+  <div class="row">
+    <label>Eye distance from mouth <span id="v_edist"></span></label>
+    <input type="range" id="s_edist" min="-20" max="70" value="18">
+  </div>
+  <div class="row">
+    <label>Eye spread <span id="v_espread"></span></label>
+    <input type="range" id="s_espread" min="15" max="60" value="34">
+  </div>
+  <div class="row">
+    <label>Eye size <span id="v_esize"></span></label>
+    <input type="range" id="s_esize" min="10" max="35" value="20">
+  </div>
+  <div class="row">
+    <label>Open sensitivity <span id="v_sens"></span></label>
+    <input type="range" id="s_sens" min="30" max="90" value="55">
+  </div>
+
+  <div class="foot">
+    <button id="calReset">Reset</button>
+    <button id="calDone">Done</button>
+  </div>
+</div>
 
 <div id="intro">
   <div class="demo">😬</div>
@@ -125,6 +225,14 @@ let hands  = null;
 let running = false;
 let smoothOpen = 0;           // smoothed mouth openness 0..1
 let blink = 0, lastBlink = performance.now();
+
+// live calibration config (tweakable via the sheet)
+const DEFAULTS = { mpos:60, mup:10, msize:85, edist:18, espread:34, esize:20, sens:55 };
+let cfg = { ...DEFAULTS };
+
+// speech state: when the puppet is "talking" we drive the mouth from audio rhythm
+let talking = false;
+let talkOpen = 0;             // 0..1 mouth drive coming from speech
 
 function toast(msg, isErr){
   toastEl.style.display='block';
@@ -211,11 +319,15 @@ function onResults(res){
   // sideways fist: fingertips meet the thumb. The gap between them = the mouth.
   // closed fist -> small gap; thumb drops open -> larger gap.
   const gap = dist(thumbTip, tipsC) / palm;     // ~0.25 closed .. ~1.0 open
-  let open = (gap - 0.32) / 0.55;
+  const range = cfg.sens/100;                   // calibrated sensitivity
+  let open = (gap - 0.30) / range;
   open = Math.max(0, Math.min(1, open));
   smoothOpen += (open - smoothOpen) * 0.4;
 
-  drawFace({wrist, thumbTip, tipsC, knuckC, palm, open:smoothOpen});
+  // when the puppet is speaking, the louder of (thumb, speech) drives the mouth
+  const mouthOpen = talking ? Math.max(smoothOpen, talkOpen) : smoothOpen;
+
+  drawFace({wrist, thumbTip, tipsC, knuckC, palm, open:mouthOpen});
 }
 
 // ---------- the puppet face ----------
@@ -223,17 +335,18 @@ function drawFace(d){
   const { wrist, thumbTip, tipsC, knuckC, palm, open } = d;
 
   // MOUTH sits on the line between the curled fingertips and the thumb tip,
-  // biased toward the fingertips (where the real gap/crease is) and nudged a
-  // touch toward the knuckles so it lands ON the hand, not below it.
-  let mx = tipsC.x*0.6 + thumbTip.x*0.4;
-  let my = tipsC.y*0.6 + thumbTip.y*0.4;
+  // biased by cfg.mpos toward fingertips/thumb, and shifted along the
+  // mouth->knuckle axis by cfg.mup so it lands where the user calibrated.
+  const bias = cfg.mpos/100;                    // 0 = thumb, 1 = fingertips
+  let mx = tipsC.x*bias + thumbTip.x*(1-bias);
+  let my = tipsC.y*bias + thumbTip.y*(1-bias);
   let kx = knuckC.x - mx, ky = knuckC.y - my;
   const kl = Math.hypot(kx,ky)||1; kx/=kl; ky/=kl;
-  const mouth = { x: mx + kx*palm*0.10, y: my + ky*palm*0.10 };
+  const mouth = { x: mx + kx*palm*(cfg.mup/100), y: my + ky*palm*(cfg.mup/100) };
 
   // mouth opening axis = fingertips -> thumb
   const ang = Math.atan2(thumbTip.y-tipsC.y, thumbTip.x-tipsC.x);
-  const mouthLen = palm*0.85;
+  const mouthLen = palm*(cfg.msize/100);
   const openPx   = open*palm*0.62;
 
   ctx.save();
@@ -292,14 +405,14 @@ function drawFace(d){
   let dirX = knuckC.x - mouth.x, dirY = knuckC.y - mouth.y;
   const dl = Math.hypot(dirX,dirY) || 1; dirX/=dl; dirY/=dl;
   const eyeCenter = {
-    x: knuckC.x + dirX*palm*0.18,
-    y: knuckC.y + dirY*palm*0.18
+    x: knuckC.x + dirX*palm*(cfg.edist/100),
+    y: knuckC.y + dirY*palm*(cfg.edist/100)
   };
 
   // spread the two eyes along the knuckle row (perpendicular to mouth->knuckle)
   const along = Math.atan2(dirY, dirX) + Math.PI/2;
-  const spread = palm*0.34;
-  const eR = palm*0.20;            // smaller, more proportionate eyes
+  const spread = palm*(cfg.espread/100);
+  const eR = palm*(cfg.esize/100);
 
   // blink timing — rare and quick (so it's not caught half-closed every frame)
   const now=performance.now();
@@ -372,6 +485,117 @@ function drawEye(x,y,r,lid,open){
   ctx.restore();
 }
 
+// ---------- talking ----------
+const PHRASES = [
+  "Hello! I am your hand. Nice to finally meet you.",
+  "Feed me a snack. I'm starving down here.",
+  "Why are you pointing that camera at me?",
+  "I've been a fist this whole time. It's exhausting.",
+  "Pssst. I know all your secrets.",
+  "Do these knuckles make me look fat?",
+  "I could really go for a high five right now.",
+  "Beep boop. I am definitely a real person.",
+  "Stop wiggling your thumb, it tickles!",
+  "One day I'll have a body. You'll see.",
+  "I rate this hand a solid eight out of ten.",
+  "Is it just me, or is it gripping in here?",
+  "I'm not a puppet, you're a puppet.",
+  "Knock knock. Who's there? Your hand. Obviously.",
+  "I demand a manicure immediately.",
+  "Left hand says hi, by the way.",
+  "I've seen things. Mostly your phone screen.",
+  "Talk to the hand, because the hand is talking.",
+  "Quick, look busy, someone's watching.",
+  "I think therefore I am... a hand."
+];
+
+let voices = [];
+function loadVoices(){ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }
+if(window.speechSynthesis){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function showBubble(text){
+  const b=document.getElementById('bubble');
+  b.textContent=text; b.classList.add('show');
+  clearTimeout(showBubble._t);
+}
+function hideBubble(){ document.getElementById('bubble').classList.remove('show'); }
+
+let chatterTimer=null;
+function startChatter(){
+  // drive the mouth in a talking rhythm while speech plays
+  stopChatter();
+  chatterTimer=setInterval(()=>{
+    // random-ish open value -> looks like syllables
+    talkOpen = 0.25 + Math.random()*0.65;
+    setTimeout(()=>{ talkOpen = 0.05 + Math.random()*0.15; }, 70+Math.random()*70);
+  }, 150);
+}
+function stopChatter(){
+  if(chatterTimer){ clearInterval(chatterTimer); chatterTimer=null; }
+  talkOpen=0;
+}
+
+function speak(){
+  const text = PHRASES[Math.floor(Math.random()*PHRASES.length)];
+  showBubble(text);
+
+  if(!window.speechSynthesis){
+    // no TTS available — still animate the mouth for the bubble's duration
+    talking=true; startChatter();
+    setTimeout(()=>{ talking=false; stopChatter(); hideBubble(); }, 2600);
+    return;
+  }
+
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 1.0; u.pitch = 1.25;   // slightly cartoonish
+  // prefer an English voice if present
+  const v = voices.find(v=>/en[-_]/i.test(v.lang)) || voices[0];
+  if(v) u.voice=v;
+
+  u.onstart = ()=>{ talking=true; startChatter(); };
+  u.onend   = ()=>{ talking=false; stopChatter(); hideBubble(); };
+  u.onerror = ()=>{ talking=false; stopChatter(); hideBubble(); };
+  speechSynthesis.speak(u);
+}
+
+// ---------- calibration sheet ----------
+const calEl=document.getElementById('cal');
+const scrim=document.getElementById('scrim');
+const sliders={
+  mpos:['s_mpos','v_mpos',v=>v+'%'],
+  mup :['s_mup','v_mup',v=>(v>0?'+':'')+v],
+  msize:['s_msize','v_msize',v=>v+'%'],
+  edist:['s_edist','v_edist',v=>(v>0?'+':'')+v],
+  espread:['s_espread','v_espread',v=>v+''],
+  esize:['s_esize','v_esize',v=>v+''],
+  sens:['s_sens','v_sens',v=>v+'']
+};
+function syncSliders(){
+  for(const k in sliders){
+    const [sid,vid,fmt]=sliders[k];
+    document.getElementById(sid).value=cfg[k];
+    document.getElementById(vid).textContent=fmt(cfg[k]);
+  }
+}
+for(const k in sliders){
+  const [sid,vid,fmt]=sliders[k];
+  document.getElementById(sid).addEventListener('input',e=>{
+    cfg[k]=+e.target.value;
+    document.getElementById(vid).textContent=fmt(cfg[k]);
+  });
+}
+function openCal(){ syncSliders(); calEl.classList.add('open'); scrim.classList.add('show'); }
+function closeCal(){ calEl.classList.remove('open'); scrim.classList.remove('show'); }
+document.getElementById('tune').addEventListener('click',openCal);
+document.getElementById('calDone').addEventListener('click',closeCal);
+scrim.addEventListener('click',closeCal);
+document.getElementById('calReset').addEventListener('click',()=>{ cfg={...DEFAULTS}; syncSliders(); });
+document.getElementById('talk').addEventListener('click',speak);
+
 // ---------- boot ----------
 document.getElementById('go').addEventListener('click', async ()=>{
   if(typeof Hands==='undefined'){
@@ -384,9 +608,10 @@ document.getElementById('go').addEventListener('click', async ()=>{
     initHands();
     intro.style.display='none';
     hud.style.display='flex';
+    document.getElementById('bar').style.display='flex';
     running=true;
     loop();
-    toast('Make a sideways fist & wiggle your thumb 👋');
+    toast('Tap ⚙︎ to calibrate, 💬 to talk');
   }catch(e){
     document.getElementById('go').textContent='Start camera →';
   }
