@@ -189,47 +189,46 @@ function onResults(res){
   }
   dot.classList.add('live'); stxt.textContent='puppet live';
 
-  // landmarks: 4=thumb tip, 8/12/16/20 = finger tips, 5=index base, 0=wrist, 9=middle base
-  const thumbTip = px(lm[4]);
-  const idxTip   = px(lm[8]);
-  const midTip   = px(lm[12]);
-  const ringTip  = px(lm[16]);
+  // landmark map:
+  //  0 wrist | 4 thumb tip | 8/12/16/20 finger tips
+  //  5/9/13/17 = finger BASES (the knuckle row across the back of the hand)
   const wrist    = px(lm[0]);
-  const midBase  = px(lm[9]);
-  const idxBase  = px(lm[5]);
+  const thumbTip = px(lm[4]);
+  const tips     = [px(lm[8]),px(lm[12]),px(lm[16]),px(lm[20])];
+  const knuck    = [px(lm[5]),px(lm[9]),px(lm[13]),px(lm[17])];
 
-  // hand scale for normalization
-  const palm = dist(wrist, midBase) || 1;
+  const avg = arr => ({
+    x: arr.reduce((s,p)=>s+p.x,0)/arr.length,
+    y: arr.reduce((s,p)=>s+p.y,0)/arr.length
+  });
+  const tipsC  = avg(tips);     // where the curled fingertips cluster
+  const knuckC = avg(knuck);    // centre of the knuckle row  -> the "forehead"
 
-  // "mouth gap" = how far thumb tip sits from the curled finger tips.
-  // In a closed sideways fist the thumb rests against the fingers (small gap);
-  // opening the thumb increases the gap -> mouth opens.
-  const fingersCenter = {
-    x:(idxTip.x+midTip.x+ringTip.x)/3,
-    y:(idxTip.y+midTip.y+ringTip.y)/3
-  };
-  const gap = dist(thumbTip, fingersCenter) / palm;   // ~0.2 closed .. ~1.1 open
+  // hand scale: knuckles -> wrist is a stable reference length
+  const palm = dist(knuckC, wrist) || 1;
 
-  // map to 0..1 openness
-  let open = (gap - 0.30) / 0.65;
+  // ---- mouth openness ----
+  // sideways fist: fingertips meet the thumb. The gap between them = the mouth.
+  // closed fist -> small gap; thumb drops open -> larger gap.
+  const gap = dist(thumbTip, tipsC) / palm;     // ~0.25 closed .. ~1.0 open
+  let open = (gap - 0.32) / 0.55;
   open = Math.max(0, Math.min(1, open));
-  smoothOpen += (open - smoothOpen) * 0.35;           // smoothing
+  smoothOpen += (open - smoothOpen) * 0.4;
 
-  drawFace(idxBase, fingersCenter, thumbTip, palm, smoothOpen);
+  drawFace({wrist, thumbTip, tipsC, knuckC, palm, open:smoothOpen});
 }
 
 // ---------- the puppet face ----------
-function drawFace(idxBase, fingersCenter, thumbTip, palm, open){
-  // mouth pivot = the crease where fingers meet thumb (between finger tips & thumb)
-  const mouth = {
-    x:(fingersCenter.x+thumbTip.x)/2,
-    y:(fingersCenter.y+thumbTip.y)/2
-  };
+function drawFace(d){
+  const { wrist, thumbTip, tipsC, knuckC, palm, open } = d;
 
-  // orientation of the mouth opening (finger tips -> thumb tip)
-  const ang = Math.atan2(thumbTip.y-fingersCenter.y, thumbTip.x-fingersCenter.x);
-  const mouthLen = palm*0.95;
-  const openPx   = open*palm*0.72;
+  // MOUTH sits on the line between the curled fingertips and the thumb tip.
+  const mouth = { x:(tipsC.x+thumbTip.x)/2, y:(tipsC.y+thumbTip.y)/2 };
+
+  // mouth opening axis = fingertips -> thumb
+  const ang = Math.atan2(thumbTip.y-tipsC.y, thumbTip.x-tipsC.x);
+  const mouthLen = palm*0.85;
+  const openPx   = open*palm*0.62;
 
   ctx.save();
   ctx.translate(mouth.x, mouth.y);
@@ -280,15 +279,21 @@ function drawFace(idxBase, fingersCenter, thumbTip, palm, open){
 
   ctx.restore();
 
-  // ---- EYES ---- placed up on the knuckle/back-of-hand area, above the mouth
-  const up = ang - Math.PI/2;                 // perpendicular, toward back of hand
-  const eyeBase = {
-    x: mouth.x + Math.cos(up)*palm*0.95,
-    y: mouth.y + Math.sin(up)*palm*0.95
+  // ---- EYES ----
+  // The knuckle row (knuckC) IS the back-of-hand "forehead" — anchor eyes there
+  // directly, nudged a little further from the mouth toward the wrist so they
+  // sit on the flat of the hand rather than on the lips.
+  let dirX = knuckC.x - mouth.x, dirY = knuckC.y - mouth.y;
+  const dl = Math.hypot(dirX,dirY) || 1; dirX/=dl; dirY/=dl;
+  const eyeCenter = {
+    x: knuckC.x + dirX*palm*0.18,
+    y: knuckC.y + dirY*palm*0.18
   };
-  const along = ang;                          // spread eyes along the mouth axis
-  const spread = palm*0.42;
-  const eR = palm*0.30;
+
+  // spread the two eyes along the knuckle row (perpendicular to mouth->knuckle)
+  const along = Math.atan2(dirY, dirX) + Math.PI/2;
+  const spread = palm*0.34;
+  const eR = palm*0.20;            // smaller, more proportionate eyes
 
   // blink timing
   const now=performance.now();
@@ -297,8 +302,8 @@ function drawFace(idxBase, fingersCenter, thumbTip, palm, open){
   const lid = 1 - Math.min(1,blink*1.6);
 
   for(const s of [-1,1]){
-    const ex = eyeBase.x + Math.cos(along)*spread*s;
-    const ey = eyeBase.y + Math.sin(along)*spread*s;
+    const ex = eyeCenter.x + Math.cos(along)*spread*s;
+    const ey = eyeCenter.y + Math.sin(along)*spread*s;
     drawEye(ex,ey,eR,lid,open);
   }
 }
