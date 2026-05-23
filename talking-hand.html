@@ -222,8 +222,14 @@ function onResults(res){
 function drawFace(d){
   const { wrist, thumbTip, tipsC, knuckC, palm, open } = d;
 
-  // MOUTH sits on the line between the curled fingertips and the thumb tip.
-  const mouth = { x:(tipsC.x+thumbTip.x)/2, y:(tipsC.y+thumbTip.y)/2 };
+  // MOUTH sits on the line between the curled fingertips and the thumb tip,
+  // biased toward the fingertips (where the real gap/crease is) and nudged a
+  // touch toward the knuckles so it lands ON the hand, not below it.
+  let mx = tipsC.x*0.6 + thumbTip.x*0.4;
+  let my = tipsC.y*0.6 + thumbTip.y*0.4;
+  let kx = knuckC.x - mx, ky = knuckC.y - my;
+  const kl = Math.hypot(kx,ky)||1; kx/=kl; ky/=kl;
+  const mouth = { x: mx + kx*palm*0.10, y: my + ky*palm*0.10 };
 
   // mouth opening axis = fingertips -> thumb
   const ang = Math.atan2(thumbTip.y-tipsC.y, thumbTip.x-tipsC.x);
@@ -295,11 +301,11 @@ function drawFace(d){
   const spread = palm*0.34;
   const eR = palm*0.20;            // smaller, more proportionate eyes
 
-  // blink timing
+  // blink timing — rare and quick (so it's not caught half-closed every frame)
   const now=performance.now();
-  if(now-lastBlink>2600+Math.random()*2200){ blink=1; lastBlink=now; }
-  blink = Math.max(0, blink-0.12);
-  const lid = 1 - Math.min(1,blink*1.6);
+  if(now-lastBlink>4500+Math.random()*4000){ blink=1; lastBlink=now; }
+  blink = Math.max(0, blink-0.28);
+  const lid = 1 - Math.min(1,blink);
 
   for(const s of [-1,1]){
     const ex = eyeCenter.x + Math.cos(along)*spread*s;
@@ -327,14 +333,17 @@ function drawTeeth(x0,x1,y,h,top){
 }
 
 function drawEye(x,y,r,lid,open){
-  // white
   ctx.save();
   ctx.translate(x,y);
+
+  // clip everything to the eye circle so the lid can never spill out as a square
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.clip();
+
+  // white
   ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
   ctx.fillStyle='#fff'; ctx.fill();
-  ctx.lineWidth=3*devicePixelRatio; ctx.strokeStyle='#101018'; ctx.stroke();
 
-  // pupil — drifts slightly with mouth movement for life
+  // pupil — drifts slightly for life
   const pr=r*0.46;
   const off=r*0.18;
   ctx.beginPath();
@@ -345,14 +354,21 @@ function drawEye(x,y,r,lid,open){
   ctx.arc(-pr*0.3, -pr*0.3, pr*0.32, 0, Math.PI*2);
   ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fill();
 
-  // eyelid (blink) — a skin-tone cap sliding down
+  // eyelid (blink): a dark cap sliding down from the top, clipped to the eye
   if(lid<0.98){
+    const lidY = -r + (2*r)*(1-lid);   // 0 = open(top), 2r = fully closed
     ctx.beginPath();
-    ctx.rect(-r-2, -r-2, (r+2)*2, (r+2)*2*(1-lid)+(r+2));
-    ctx.fillStyle='#e9b48f'; ctx.fill();
-    ctx.beginPath(); ctx.arc(0,0,r+1.5,0,Math.PI*2);
-    ctx.lineWidth=3*devicePixelRatio; ctx.strokeStyle='#101018'; ctx.stroke();
+    ctx.rect(-r-2, -r-2, (r+2)*2, (lidY+r+2));
+    ctx.fillStyle='#1a1a22'; ctx.fill();
   }
+
+  ctx.restore();
+
+  // outline drawn last, on top, unclipped
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+  ctx.lineWidth=3*devicePixelRatio; ctx.strokeStyle='#101018'; ctx.stroke();
   ctx.restore();
 }
 
