@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 2. 27/05/26 - made DOB optional and changed search layout and wordings ── -->
+<!-- ── 1. This is the launched site ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -346,11 +346,15 @@
     <div class="vinyl-divider">Register Your Details</div>
     <div class="paper-box">
       <div id="signup-err"></div>
+      <div style="background:var(--cream);border-left:3px solid var(--amber);border-radius:6px;padding:12px 14px;margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--dark)">
+        <strong>Why do we need your details?</strong><br>
+        Your name and country let people who love you search for your song choices. Your email secures your account and confirms it&rsquo;s really you. We will never share, sell, or spam your details &mdash; ever.
+      </div>
       <label>Full Name</label>
       <input type="text" id="su-name" placeholder="e.g. John Smith">
       <label>Email Address</label>
       <input type="email" id="su-email" placeholder="your@email.com">
-      <label>Date of Birth</label>
+      <label>Date of Birth <span class="optional-tag">(optional)</span></label>
       <input type="text" id="su-dob" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/YYYY" maxlength="10">
       <label>Country</label>
       <select id="su-country"><option value="">&mdash; Select your country &mdash;</option></select>
@@ -566,6 +570,8 @@
         <input type="text" id="lk-name" placeholder="e.g. John or John Smith" onkeydown="if(event.key==='Enter')doSecondarySearch()">
         <label>Country</label>
         <select id="lk-country"><option value="">&mdash; Select country &mdash;</option></select>
+        <label>City <span class="optional-tag">(optional)</span></label>
+        <input type="text" id="lk-city" placeholder="e.g. London">
         <button class="btn" onclick="doSecondarySearch()">Search</button>
       </div>
 
@@ -584,12 +590,10 @@
       <!-- SECONDARY SEARCH: Email + DOB -->
       <div id="primary-search-form">
         <div style="text-align:center;margin-bottom:1.2rem;font-size:12px;color:var(--mid)">
-          <strong>Search by Email & Date of Birth</strong>
+          <strong>Search by Email Address</strong>
         </div>
         <label>Their Email Address</label>
         <input type="email" id="lk-email" placeholder="friend@email.com">
-        <label>Their Date of Birth</label>
-        <input type="text" id="lk-dob" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/YYYY" maxlength="10">
         <button class="btn" onclick="doLookup()">Find Their Songs</button>
       </div>
     
@@ -1298,7 +1302,7 @@ function show(id){
   if(id==='s-landing')refreshLandingForUser();
 if(id==='s-lookup'){
     document.getElementById('lk-email').value='';
-    document.getElementById('lk-dob').value='';
+    document.getElementById('lk-city').value='';
     document.getElementById('lk-country').value='';
     document.getElementById('lk-name').value='';
     document.getElementById('secondary-search-results').style.display='none';
@@ -1373,7 +1377,7 @@ function attachDobFormatter(el){
     }
   });
 }
-['su-dob','ed-dob','lk-dob'].forEach(id=>attachDobFormatter(document.getElementById(id)));
+['su-dob','ed-dob'].forEach(id=>attachDobFormatter(document.getElementById(id)));
 
 // Read a DOB field and return ISO YYYY-MM-DD, or '' if not a valid real date.
 // Validates day/month ranges and rejects impossible dates (e.g. 31/02/1990).
@@ -1416,10 +1420,12 @@ async function doSignup(){
   const dob=getDobISO('su-dob');
   const country=document.getElementById('su-country').value;
   const city=document.getElementById('su-city').value.trim();
-  if(!name||!email||!dob||!country){err('signup-err','Please fill in all required fields including your country.');return;}
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)){err('signup-err','Please enter your date of birth as DD/MM/YYYY.');return;}
-  const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
-  if(age<13){err('signup-err','You must be at least 13 years old to register. Please see our Terms of Service.');return;}
+  if(!name||!email||!country){err('signup-err','Please fill in all required fields including your country.');return;}
+  if(dob){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dob)){err('signup-err','Please enter your date of birth as DD/MM/YYYY.');return;}
+    const dobDate=new Date(dob);const today=new Date();let age=today.getFullYear()-dobDate.getFullYear();const m=today.getMonth()-dobDate.getMonth();if(m<0||(m===0&&today.getDate()<dobDate.getDate()))age--;
+    if(age<13){err('signup-err','You must be at least 13 years old to register. Please see our Terms of Service.');return;}
+  }
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
   
   state.pendingUser={name,email,dob,country,city};
@@ -2149,8 +2155,7 @@ function emailRecord(){
 async function doLookup(){
   clearErr('lookup-err');
   const email=document.getElementById('lk-email').value.trim().toLowerCase();
-  const dob=getDobISO('lk-dob');
-  if(!email||!dob){err('lookup-err','Please enter their email and date of birth as DD/MM/YYYY.');return;}
+  if(!email){err('lookup-err','Please enter their email address.');return;}
   
   try{
     // Fetch the user's record from Supabase
@@ -2186,6 +2191,7 @@ async function doSecondarySearch(){
   clearErr('lookup-err');
   const country = document.getElementById('lk-country').value.trim();
   const name = document.getElementById('lk-name').value.trim();
+  const city = document.getElementById('lk-city').value.trim().toLowerCase();
   const resultsDiv = document.getElementById('secondary-search-results');
   const matchesDiv = document.getElementById('secondary-matches');
   
@@ -2237,14 +2243,15 @@ async function doSecondarySearch(){
       const userNameLower = user.name.toLowerCase();
       const userWords = userNameLower.split(/\s+/).filter(w => w.length > 0);
       
-      // Match 1: Full substring (e.g., "john smith" or "smith" in "John Smith")
-      if(userNameLower.includes(nameLower)) return true;
-      
       // Match 2: All search words must match the start of at least one user word
-      // This allows "Rob Manning" to find "Robert Manning"
-      return searchWords.every(searchWord => 
-        userWords.some(userWord => userWord.startsWith(searchWord))
-      );
+      const nameMatch = userNameLower.includes(nameLower) ||
+        searchWords.every(searchWord => userWords.some(userWord => userWord.startsWith(searchWord)));
+      if(!nameMatch) return false;
+      // City filter (optional)
+      if(city && user.city){
+        if(!user.city.toLowerCase().includes(city)) return false;
+      }
+      return true;
     });
     
     // Clear error and display results
@@ -2424,7 +2431,7 @@ function renderAdmin(){
 
 function clearLookupAndShow(){
   document.getElementById('lk-email').value='';
-  document.getElementById('lk-dob').value='';
+  document.getElementById('lk-city').value='';
   document.getElementById('lk-country').value='';
   document.getElementById('lk-name').value='';
   document.getElementById('secondary-search-results').style.display='none';
@@ -2575,7 +2582,7 @@ function signOut(){
       if(hash==='s-landing')refreshLandingForUser();
       if(hash==='s-lookup'){
         document.getElementById('lk-email').value='';
-        document.getElementById('lk-dob').value='';
+        document.getElementById('lk-city').value='';
         document.getElementById('lk-country').value='';
         document.getElementById('lk-name').value='';
         document.getElementById('secondary-search-results').style.display='none';
