@@ -2189,6 +2189,7 @@ async function doSecondarySearch(){
   clearErr('lookup-err');
   const country = document.getElementById('lk-country').value.trim();
   const name = document.getElementById('lk-name').value.trim();
+  const city = document.getElementById('lk-city').value.trim().toLowerCase();
   const resultsDiv = document.getElementById('secondary-search-results');
   const matchesDiv = document.getElementById('secondary-matches');
   
@@ -2241,13 +2242,16 @@ async function doSecondarySearch(){
       const userWords = userNameLower.split(/\s+/).filter(w => w.length > 0);
       
       // Match 1: Full substring (e.g., "john smith" or "smith" in "John Smith")
-      if(userNameLower.includes(nameLower)) return true;
-      
-      // Match 2: All search words must match the start of at least one user word
-      // This allows "Rob Manning" to find "Robert Manning"
-      return searchWords.every(searchWord => 
-        userWords.some(userWord => userWord.startsWith(searchWord))
-      );
+      const nameMatch = userNameLower.includes(nameLower) ||
+        searchWords.every(searchWord => userWords.some(userWord => userWord.startsWith(searchWord)));
+      if(!nameMatch) return false;
+
+      // City filter (optional — only applied if searcher entered a city)
+      if(city && user.city){
+        if(!user.city.toLowerCase().includes(city)) return false;
+      }
+
+      return true;
     });
     
     // Clear error and display results
