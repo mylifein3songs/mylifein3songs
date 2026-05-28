@@ -1302,7 +1302,7 @@ function show(id){
   if(id==='s-landing')refreshLandingForUser();
 if(id==='s-lookup'){
     document.getElementById('lk-email').value='';
-    document.getElementById('lk-dob').value='';
+    document.getElementById('lk-city').value='';
     document.getElementById('lk-country').value='';
     document.getElementById('lk-name').value='';
     document.getElementById('secondary-search-results').style.display='none';
@@ -2428,7 +2428,7 @@ function renderAdmin(){
 
 function clearLookupAndShow(){
   document.getElementById('lk-email').value='';
-  document.getElementById('lk-dob').value='';
+  document.getElementById('lk-city').value='';
   document.getElementById('lk-country').value='';
   document.getElementById('lk-name').value='';
   document.getElementById('secondary-search-results').style.display='none';
@@ -2579,7 +2579,7 @@ function signOut(){
       if(hash==='s-landing')refreshLandingForUser();
       if(hash==='s-lookup'){
         document.getElementById('lk-email').value='';
-        document.getElementById('lk-dob').value='';
+        document.getElementById('lk-city').value='';
         document.getElementById('lk-country').value='';
         document.getElementById('lk-name').value='';
         document.getElementById('secondary-search-results').style.display='none';
