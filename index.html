@@ -2153,9 +2153,8 @@ function emailRecord(){
 async function doLookup(){
   clearErr('lookup-err');
   const email=document.getElementById('lk-email').value.trim().toLowerCase();
-  const dob=getDobISO('lk-dob');
-  if(!email||!dob){err('lookup-err','Please enter their email and date of birth as DD/MM/YYYY.');return;}
   
+if(!email){err('lookup-err','Please enter their email address.');return;}  
   try{
     // Fetch the user's record from Supabase
     const {data,error}=await window.supabase_client.from('users').select('*').eq('email',email).single();
