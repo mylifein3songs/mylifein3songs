@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 2. 28/05 - several changes ── -->
+<!-- ── 3. 28/05 - changed the search ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -570,6 +570,8 @@
         <input type="text" id="lk-name" placeholder="e.g. John or John Smith" onkeydown="if(event.key==='Enter')doSecondarySearch()">
         <label>Country</label>
         <select id="lk-country"><option value="">&mdash; Select country &mdash;</option></select>
+        <label>City <span class="optional-tag">(optional)</span></label>
+        <input type="text" id="lk-city" placeholder="e.g. London">
         <button class="btn" onclick="doSecondarySearch()">Search</button>
       </div>
 
@@ -588,12 +590,10 @@
       <!-- SECONDARY SEARCH: Email + DOB -->
       <div id="primary-search-form">
         <div style="text-align:center;margin-bottom:1.2rem;font-size:12px;color:var(--mid)">
-          <strong>Search by Email & Date of Birth</strong>
+      <strong>Search by Email Address</strong>
         </div>
         <label>Their Email Address</label>
         <input type="email" id="lk-email" placeholder="friend@email.com">
-        <label>Their Date of Birth</label>
-        <input type="text" id="lk-dob" inputmode="numeric" autocomplete="bday" placeholder="DD/MM/YYYY" maxlength="10">
         <button class="btn" onclick="doLookup()">Find Their Songs</button>
       </div>
     
