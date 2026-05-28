@@ -2164,7 +2164,7 @@ if(!email){err('lookup-err','Please enter their email address.');return;}
     }
     
     const user=data;
-    if(user.dob!==dob){err('lookup-err','Date of birth does not match our records.');return;}
+
     if(!user.songs||user.songs.length===0||!user.songs.some(Boolean)){err('lookup-err',"This person hasn't saved their songs yet.");return;}
     
     // Increment views in Supabase
