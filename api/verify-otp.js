@@ -5,8 +5,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, code, action, name, dob, country, city } = req.body;
-
+const { email, code, action, name, country, city } = req.body;
+  
   // Validate input
   if (!email || !code || !action) {
     return res.status(400).json({ error: 'Missing required fields: email, code, action' });
@@ -44,8 +44,8 @@ export default async function handler(req, res) {
     // --- END OTP VALIDATION ---
 
     if (action === 'signup') {
-      if (!name || !dob || !country) {
-        return res.status(400).json({ error: 'Missing required signup fields: name, dob, country' });
+      if (!name || !country) {
+        return res.status(400).json({ error: 'Missing required signup fields: name, country' });
       }
 
       const { data: existingUser } = await supabase
