@@ -63,7 +63,6 @@ const { email, code, action, name, country, city } = req.body;
         .insert([{
           email: email.toLowerCase(),
           name: name || null,
-          dob: dob || null,
           country: country || null,
           city: city || null,
           songs: null,
