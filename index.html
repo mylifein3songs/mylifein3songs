@@ -2697,22 +2697,20 @@ function generateInstagramPreview() {
     const artworkPromises = songs.map((song, i) => {
       return new Promise((resolve) => {
         if (!song || !song.artwork) {
-  // Draw placeholder square with ?
   const pos = artworkPositions[i];
   if (pos) {
-    ctx.fillStyle = '#E8E4DC';
-    roundRect(ctx, pos.x, pos.y, pos.size, pos.size, 8);
-    ctx.fill();
-
-    // Draw ? in the centre
-    ctx.fillStyle = '#1E2A4A';
-    ctx.font = 'bold 80px "DM Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('?', pos.x + pos.size / 2, pos.y + pos.size / 2);
-    ctx.textBaseline = 'alphabetic';
+    const placeholder = new Image();
+    placeholder.onload = () => {
+      ctx.drawImage(placeholder, pos.x, pos.y, pos.size, pos.size);
+      resolve();
+    };
+    placeholder.onerror = () => {
+      resolve();
+    };
+    placeholder.src = '/placeholder-artwork.png';
+  } else {
+    resolve();
   }
-  resolve();
   return;
 }
 
