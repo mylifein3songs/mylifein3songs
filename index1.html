@@ -2627,17 +2627,17 @@ let instagramShareData = null;
  */
 function openInstagramShareModal() {
   const user = state.currentUser ? state.db[state.currentUser] : null;
-  
-  if (!user || !user.songs || !user.songs.some(s => s)) {
-    showMessage('Please save your songs first!', 'error');
+  const songs = (user && user.songs && user.songs.some(s => s)) ? user.songs : pendingSongsForSignup;
+
+  if (!songs || !songs.some(s => s)) {
     return;
   }
 
   // Prepare share data
   instagramShareData = {
-    user: user,
-    songs: user.songs,
-    userName: user.name ? user.name.split(' ')[0] : ''
+    user: user || {},
+    songs: songs,
+    userName: (user && user.name) ? user.name.split(' ')[0] : ''
   };
 
   // Show modal
