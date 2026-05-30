@@ -1532,7 +1532,6 @@ async function doVerifySignup(){
       await saveDB();
       renderMyRecord();
       show('s-saved');
-      openShareModal('first');
     } else {
       // No pre-chosen songs — go to pick screen as before
       initPickScreen(false);
