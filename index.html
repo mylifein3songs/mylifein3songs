@@ -1447,7 +1447,6 @@ async function doSignup(){
     
     if (!response.ok) {
       const data = await response.json();
-      gtag('event', 'signup_complete', { songs_count: selectedSongs.filter(Boolean).length });
       err('signup-err', data.error || 'Failed to send code. Please try again.');
       return;
     }
@@ -1504,7 +1503,8 @@ async function doVerifySignup(){
     
     // Store session token for future logins
     localStorage.setItem('sessionToken', result.token);
-    
+    gtag('event', 'signup_complete', { songs_count: selectedSongs.filter(Boolean).length });
+
     // Create user object — attach any songs chosen before signup
     const newUser = {
       email: u.email,
