@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 5. 29/05 - changed the og-image and insta placeholder ── -->
+<!-- ── 6. 30.05 - making the city not optional ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -363,7 +363,7 @@
       </div>
       <label>Country</label>
       <select id="su-country"><option value="">&mdash; Select your country &mdash;</option></select>
-      <label>City <span class="optional-tag">(optional)</span></label>
+      <label>City</label>
       <input type="text" id="su-city" placeholder="e.g. London">
       <button class="btn" onclick="doSignup()">Send Verification Code</button>
     </div>
@@ -487,7 +487,7 @@
 
       <label>Country</label>
       <select id="ed-country"><option value="">&mdash; Select your country &mdash;</option></select>
-      <label>City <span class="optional-tag">(optional)</span></label>
+      <label>City</label>
       <input type="text" id="ed-city" placeholder="e.g. London">
       <button class="btn amber" style="width:auto;padding:8px 20px;font-size:13px;margin-top:0" onclick="saveDetails()">Save Details</button>
       <div class="details-saved-ok" id="details-saved-ok">&#10003; Details updated successfully</div>
@@ -1424,7 +1424,7 @@ async function doSignup(){
   const ageConfirmed=document.getElementById('su-age-confirm').checked;
   const country=document.getElementById('su-country').value;
   const city=document.getElementById('su-city').value.trim();
-  if(!name||!email||!country){err('signup-err','Please fill in all required fields including your country.');return;}
+  if(!name||!email||!country||!city){err('signup-err','Please fill in all required fields.');return;}
   if(!ageConfirmed){err('signup-err','Please confirm you are aged 13 or over.');return;}
   if(state.db[email]){err('signup-err','An account already exists. Please sign in.');return;}
   
@@ -1736,7 +1736,7 @@ function saveDetails(){
   const newEmail=document.getElementById('ed-email').value.trim().toLowerCase();
   const country=document.getElementById('ed-country').value;
   const city=document.getElementById('ed-city').value.trim();
-  if(!name||!newEmail||!country){err('edit-details-err','All fields except city are required.');return;}
+  if(!name||!newEmail||!country||!city){err('edit-details-err','All fields are required.');return;}
   const emailChanged=newEmail!==state.currentUser;
   if(emailChanged){
     if(state.db[newEmail]){err('edit-details-err','That email address is already registered to another account.');return;}
