@@ -2003,11 +2003,11 @@ async function doSave(){
   if(!selectedSongs.some(Boolean))return;
   const notes=document.getElementById('notes-field').value.trim();
 
-  // Guest: hold songs in memory and send them to signup
+  // Guest: hold songs in memory, show Instagram share modal then go to signup
   if(!state.currentUser || !state.db[state.currentUser]){
     pendingSongsForSignup=[...selectedSongs];
     pendingNotesForSignup=notes;
-    show('s-signup');
+    openInstagramShareModal();
     return;
   }
 
@@ -2843,6 +2843,10 @@ function closeInstagramShare() {
   const modal = document.getElementById('instagram-share-modal');
   if (modal) {
     modal.classList.remove('open');
+  }
+  // If guest, go to signup after closing
+  if(!state.currentUser || !state.db[state.currentUser]){
+    show('s-signup');
   }
 }
 
