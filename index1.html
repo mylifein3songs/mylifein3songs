@@ -357,14 +357,14 @@
       <input type="text" id="su-name" placeholder="e.g. John Smith">
       <label>Email Address</label>
       <input type="email" id="su-email" placeholder="your@email.com">
-      <div style="display:flex;align-items:flex-start;gap:10px;margin:8px 0 4px">
-        <input type="checkbox" id="su-age-confirm" style="margin-top:3px;accent-color:var(--amber);width:16px;height:16px;flex-shrink:0">
-        <label for="su-age-confirm" style="font-size:13px;letter-spacing:0;text-transform:none;font-weight:400;cursor:pointer;line-height:1.5">I confirm I am aged 13 or over</label>
-      </div>
       <label>Country</label>
       <select id="su-country"><option value="">&mdash; Select your country &mdash;</option></select>
       <label>City</label>
       <input type="text" id="su-city" placeholder="e.g. London">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin:8px 0 4px">
+        <input type="checkbox" id="su-age-confirm" style="margin-top:3px;accent-color:var(--amber);width:16px;height:16px;flex-shrink:0">
+        <label for="su-age-confirm" style="font-size:13px;letter-spacing:0;text-transform:none;font-weight:400;cursor:pointer;line-height:1.5">I confirm I am aged 13 or over</label>
+      </div>
       <button class="btn" onclick="doSignup()">Send Verification Code</button>
     </div>
     <p class="text-center mt"><span class="link" onclick="pendingSongsForSignup?show('s-pick'):show('s-landing')">&larr; Back</span></p>
