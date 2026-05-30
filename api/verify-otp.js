@@ -44,8 +44,8 @@ const { email, code, action, name, country, city } = req.body;
     // --- END OTP VALIDATION ---
 
     if (action === 'signup') {
-      if (!name || !country) {
-        return res.status(400).json({ error: 'Missing required signup fields: name, country' });
+      if (!name || !country || !city) {
+        return res.status(400).json({ error: 'Missing required signup fields: name, country, city' });
       }
 
       const { data: existingUser } = await supabase
