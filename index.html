@@ -1855,7 +1855,9 @@ function renderSlots(){
 }
 function moveSlot(from,to){const t=selectedSongs[to];selectedSongs[to]=selectedSongs[from];selectedSongs[from]=t;renderSlots();}
 function removeSlot(i){
-  selectedSongs[i]=null;
+  // Remove the song then shuffle remaining songs up to fill the gap
+  selectedSongs.splice(i,1);
+  selectedSongs.push(null);
   previewSongId=null;previewZone=null;
   clearSearchAndPreview('top');clearSearchAndPreview('mid');
   renderSlots();
