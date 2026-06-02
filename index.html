@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 8. 30.05 - added google analytics ── -->
+<!-- ── 9. 02.06 - revised search screen for new users ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -152,6 +152,8 @@
   .result-title{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .result-sub{font-size:11px;color:var(--mid)}
   .add-tag{font-size:10px;color:var(--amber);letter-spacing:1px;white-space:nowrap;font-family:'Special Elite',cursive;flex-shrink:0}
+  .result-play-btn{background:var(--dark);color:var(--cream);border:none;border-radius:50%;width:26px;height:26px;flex-shrink:0;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:background .15s;margin-left:2px}
+  .result-play-btn:hover{background:var(--amber)}
   .manual-entry{border-top:1px dashed var(--mid);margin-top:10px;padding-top:10px}
   .manual-entry-title{font-size:11px;letter-spacing:1px;color:var(--mid);margin-bottom:8px;text-transform:uppercase}
   .manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
@@ -1926,19 +1928,52 @@ function refreshAllResults(){
   if(lastResultsMid.length||lastQueryMid)renderResultsInto('search-results-mid','',lastResultsMid);
 }
 function renderResultsInto(cid,fullMsgId,list){
-  if(!list.length){setEl(cid,'<div class="results-list"><div class="result-item" style="opacity:.6"><div class="result-info"><div class="result-sub">No results found. Try a different search term.</div></div></div></div>');return;}
+  if(!list.length){setEl(cid,'<div class=\"results-list\"><div class=\"result-item\" style=\"opacity:.6\"><div class=\"result-info\"><div class=\"result-sub\">No results found. Try a different search term.</div></div></div></div>');return;}
   const zone=cid==='search-results-top'?'top':'mid';
   const takenIds=selectedSongs.filter(Boolean).map(s=>s.id);
   const html=list.map(s=>{
     const taken=takenIds.includes(s.id);const dis=taken;
     const thumb=s.artwork
-      ?'<div class="result-thumb" style="background-image:url(\''+s.artwork+'\');background-size:cover;background-position:center"></div>'
-      :'<div class="result-thumb">&#9834;</div>';
-    return'<div class="result-item '+(dis?'disabled':'')+'" onclick="'+(dis?'':'pickSong(\''+s.id+'\',\''+zone+'\')')+'">'+thumb+'<div class="result-info"><div class="result-title">'+escHtml(s.title)+'</div><div class="result-sub">'+escHtml(s.artist)+' &middot; '+escHtml(s.album)+'</div></div>'+(taken?'<span class="add-tag">ADDED</span>':'')+'</div>';
+      ?'<div class=\"result-thumb\" style=\"background-image:url(\''+s.artwork+'\');background-size:cover;background-position:center\"></div>'
+      :'<div class=\"result-thumb\">&#9834;</div>';
+    const playBtn=s.preview
+      ?'<button class=\"result-play-btn\" onclick=\"event.stopPropagation();playPreview(\''+s.id+'\',\''+zone+'\')\">&#9654;</button>'
+      :'';
+    return'<div class=\"result-item '+(dis?'disabled':'')+'\" onclick=\"'+(dis?'':'quickAddSong(\''+s.id+'\',\''+zone+'\')')+'\">'+thumb+'<div class=\"result-info\"><div class=\"result-title\">'+escHtml(s.title)+'</div><div class=\"result-sub\">'+escHtml(s.artist)+' &middot; '+escHtml(s.album)+'</div></div>'+(taken?'<span class=\"add-tag\">ADDED</span>':'')+playBtn+'</div>';
   }).join('');
-  setEl(cid,'<div class="results-list">'+html+'</div>');
+  setEl(cid,'<div class=\"results-list\">'+html+'</div>');
 }
 let previewSongId=null,previewZone=null;
+// Stage 1: tap row → auto-fill next empty slot
+function quickAddSong(id,zone){
+  const song=searchCache[id];
+  if(!song)return;
+  // Find first empty slot
+  let slotIndex=selectedSongs.findIndex(s=>s===null);
+  if(slotIndex===-1){
+    // All full — replace slot 0 (oldest)
+    slotIndex=0;
+  }
+  selectedSongs[slotIndex]=song;
+  renderSlots();
+  // Clear preview if one was open
+  clearSearchAndPreview(zone);
+}
+
+// Stage 1: small play button previews the 30-sec clip inline
+let activeAudio=null;
+function playPreview(id,zone){
+  const song=searchCache[id];
+  if(!song||!song.preview)return;
+  // Stop any currently playing audio
+  if(activeAudio){activeAudio.pause();activeAudio=null;}
+  const previewEl=document.getElementById('search-preview-'+(zone||'top'));
+  if(!previewEl)return;
+  previewEl.innerHTML='<div style=\"margin-top:8px;padding:8px 10px;background:var(--paper);border:1px solid rgba(30,42,74,.1);border-radius:8px;display:flex;align-items:center;gap:8px\"><img src=\"'+song.artwork+'\" style=\"width:36px;height:36px;border-radius:4px;flex-shrink:0\" onerror=\"this.style.display=\'none\'\"><div style=\"flex:1;min-width:0\"><div style=\"font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis\">'+escHtml(song.title)+'</div><div style=\"font-size:11px;color:var(--mid)\">'+escHtml(song.artist)+'</div></div><audio id=\"preview-audio-'+id+'\" src=\"'+song.preview+'\" controls style=\"height:32px;flex-shrink:0;width:160px\"></audio></div>';
+  activeAudio=document.getElementById('preview-audio-'+id);
+  if(activeAudio)activeAudio.play().catch(()=>{});
+}
+  
 function pickSong(id,zone){
   const song=searchCache[id];
   if(!song)return;
