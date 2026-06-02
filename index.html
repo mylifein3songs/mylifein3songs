@@ -463,7 +463,7 @@
 
 
 
-      <div style="margin-top:1rem;border-top:1px solid rgba(30,42,74,.08);padding-top:1rem">
+      <div id="special-instructions-box" style="margin-top:1rem;border-top:1px solid rgba(30,42,74,.08);padding-top:1rem;display:none">
         <div class="paper-box-title" style="margin-bottom:.75rem">Special Instructions <span class="optional-tag">&mdash; any requests for the service?</span></div>
         <textarea id="notes-field" maxlength="300" placeholder="e.g. Please play the full version. Ask the congregation to stand for the exit song&hellip;" oninput="updateCharCount()"></textarea>
         <div class="char-count" id="char-count">0 / 300</div>
@@ -1713,6 +1713,9 @@ function initPickScreen(editing){
   document.getElementById('search-q').value='';document.getElementById('search-q-mid').value='';
   lastQueryTop='';lastResultsTop=[];lastQueryMid='';lastResultsMid=[];
   renderSlots();updateSaveBtn();
+  // Show Special Instructions and slot labels only for logged-in editing
+  const siBox=document.getElementById('special-instructions-box');
+  if(siBox)siBox.style.display=(editing&&state.currentUser)?'block':'none';
 }
 // Open the dedicated Account Details screen (formerly inline on s-pick).
 // Populates the form from the current user, clears any pending email-change state.
@@ -1830,8 +1833,8 @@ function renderSlots(){
   selectedSongs.forEach((s,i)=>{
     const slotEl=document.getElementById('slot-'+i);
     const lbl=SLOT_LABELS[i];
-    const lh='<div class="slot-label"><div class="slot-label-main">Song '+(i+1)+'</div></div>';
-    if(s){
+    const lblText=(state.currentUser&&state.db&&state.db[state.currentUser])?lbl.main:'Song '+(i+1);
+    const lh='<div class="slot-label"><div class="slot-label-main">'+lblText+'</div></div>';    if(s){
       slotEl.className='slot filled';
       const subText=escHtml(s.artist)+(s.album?' \u2014 '+escHtml(s.album):'');
       const artHtml=s.artwork
