@@ -1842,10 +1842,13 @@ function renderSlots(){
         :'<div class="slot-art-placeholder">&#9834;</div>';
       const upDisabled=i===0?'disabled':'';
       const downDisabled=i===2?'disabled':'';
+      const isLoggedIn=!!(state.currentUser&&state.db&&state.db[state.currentUser]);
+      const moveUp=isLoggedIn?`<button class="slot-move-btn" ${upDisabled} onclick="moveSlot(${i},${i-1})" title="Move up"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>`:'';
+      const moveDown=isLoggedIn?`<button class="slot-move-btn" ${downDisabled} onclick="moveSlot(${i},${i+1})" title="Move down"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`:'';
       const controls=`<div class="slot-controls">
-        <button class="slot-move-btn" ${upDisabled} onclick="moveSlot(${i},${i-1})" title="Move up"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg></button>
+        ${moveUp}
         <button class="slot-remove-btn" onclick="removeSlot(${i})" title="Remove song"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        <button class="slot-move-btn" ${downDisabled} onclick="moveSlot(${i},${i+1})" title="Move down"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        ${moveDown}
       </div>`;
       slotEl.innerHTML=lh+artHtml+'<div class="slot-info"><div class="slot-title">'+escHtml(s.title)+'</div><div class="slot-sub">'+subText+'</div></div>'+controls;
     } else {
