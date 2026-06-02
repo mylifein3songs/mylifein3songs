@@ -162,16 +162,17 @@
   .manual-err{font-size:11px;color:var(--red);margin-top:4px;display:none}
   /* Slot */
   .slot-block{margin-bottom:10px}
-  .slot{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--mid);padding:10px 12px;min-height:64px;background:var(--cream);transition:background .15s,border-color .15s}
-  .slot.filled{border-style:solid;border-color:var(--dark);background:var(--paper)}
-  .slot-label{flex-shrink:0;width:80px}
-  .slot-label-main{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--coral);text-transform:uppercase;line-height:1.2}
-  .slot-label-sub{font-size:10px;color:var(--mid);letter-spacing:1px;font-style:italic}
+  .slot{display:flex;align-items:center;gap:12px;border:1.5px dashed rgba(30,42,74,.25);padding:10px 12px;min-height:72px;background:var(--cream);border-radius:10px;transition:background .15s,border-color .15s}
+  .slot.filled{border-style:solid;border-color:var(--dark);background:var(--paper);box-shadow:0 2px 8px rgba(30,42,74,.08)}
+  .slot-art{width:48px;height:48px;border-radius:6px;flex-shrink:0;background:var(--light);object-fit:cover;display:block}
+  .slot-art-placeholder{width:48px;height:48px;border-radius:6px;flex-shrink:0;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--mid)}
+  .slot-label{flex-shrink:0;width:72px}
+  .slot-label-main{font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;color:var(--coral);text-transform:uppercase;line-height:1.2}
   .slot-info{flex:1;min-width:0}
   .slot-title{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700}
   .slot-sub{font-size:11px;color:var(--mid)}
   .slot-empty{font-size:11px;color:var(--mid);font-style:italic;line-height:1.5}
-  .slot-remove-btn{background:none;border:none;cursor:pointer;color:#999;flex-shrink:0;padding:4px;line-height:0;transition:color .15s}
+  .slot-remove-btn{background:none;border:none;cursor:pointer;color:#bbb;flex-shrink:0;padding:4px;line-height:0;transition:color .15s;position:relative}
   .slot-remove-btn:hover{color:var(--red)}
   .slot-controls{display:flex;flex-direction:column;gap:2px;flex-shrink:0;align-items:center}
   .slot-move-btn{background:none;border:none;cursor:pointer;color:#bbb;padding:2px;line-height:0;transition:color .15s}
@@ -1829,10 +1830,13 @@ function renderSlots(){
   selectedSongs.forEach((s,i)=>{
     const slotEl=document.getElementById('slot-'+i);
     const lbl=SLOT_LABELS[i];
-    const lh='<div class="slot-label"><div class="slot-label-main">'+lbl.main+'</div></div>';
+    const lh='<div class="slot-label"><div class="slot-label-main">Song '+(i+1)+'</div></div>';
     if(s){
       slotEl.className='slot filled';
       const subText=escHtml(s.artist)+(s.album?' \u2014 '+escHtml(s.album):'');
+      const artHtml=s.artwork
+        ?'<img class="slot-art" src="'+s.artwork+'" alt="" loading="lazy">'
+        :'<div class="slot-art-placeholder">&#9834;</div>';
       const upDisabled=i===0?'disabled':'';
       const downDisabled=i===2?'disabled':'';
       const controls=`<div class="slot-controls">
@@ -1840,10 +1844,10 @@ function renderSlots(){
         <button class="slot-remove-btn" onclick="removeSlot(${i})" title="Remove song"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <button class="slot-move-btn" ${downDisabled} onclick="moveSlot(${i},${i+1})" title="Move down"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
       </div>`;
-      slotEl.innerHTML=lh+'<div class="slot-info"><div class="slot-title">'+escHtml(s.title)+'</div><div class="slot-sub">'+subText+'</div></div>'+controls;
+      slotEl.innerHTML=lh+artHtml+'<div class="slot-info"><div class="slot-title">'+escHtml(s.title)+'</div><div class="slot-sub">'+subText+'</div></div>'+controls;
     } else {
       slotEl.className='slot';
-      slotEl.innerHTML=lh+'<span class="slot-empty">No song selected &mdash; to be left to the discretion of family &amp; friends</span>';
+      slotEl.innerHTML=lh+'<div class="slot-art-placeholder">&#9834;</div><span class="slot-empty">Add a song&hellip;</span>';
     }
   });
   updateSaveBtn();
