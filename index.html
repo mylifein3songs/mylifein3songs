@@ -2145,7 +2145,7 @@ function buildRecordCard(user,songs,notes){
   const loc=user.city?user.city+', '+user.country:user.country;
   const tracks=songs.map((s,i)=>{
     if(!s){
-      return'<div class="track-row"><div class="track-label"><div class="track-label-main">'+SLOT_LABELS[i].main+'</div></div><div class="track-info"><div class="track-title" style="color:var(--mid);font-style:italic;font-size:13px">No song selected</div><div class="track-sub">Left to the discretion of family &amp; friends</div></div></div>';
+      return'';
     }
     const subText=escHtml(s.artist)+(s.album?' \u2014 '+escHtml(s.album):'');
     return'<div class="track-row"><div class="track-label"><div class="track-label-main">'+SLOT_LABELS[i].main+'</div></div><div class="track-info"><div class="track-title">'+escHtml(s.title)+'</div><div class="track-sub">'+subText+'</div></div></div>';
