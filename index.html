@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 10. 03.06 - revised search screen for new users ── -->
+<!-- ── 9. 02.06 - revised search screen for new users ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -1853,7 +1853,7 @@ function renderSlots(){
       slotEl.innerHTML=lh+artHtml+'<div class="slot-info"><div class="slot-title">'+escHtml(s.title)+'</div><div class="slot-sub">'+subText+'</div></div>'+controls;
     } else {
       slotEl.className='slot';
-      slotEl.innerHTML=lh+'<div class="slot-art-placeholder">&#9834;</div><span class="slot-empty">Empty</span>';
+      slotEl.innerHTML=lh+'<div class="slot-art-placeholder">&#9834;</div><span class="slot-empty">Add a song&hellip;</span>';
     }
   });
   updateSaveBtn();
@@ -2057,7 +2057,7 @@ async function doSave(){
     pendingSongsForSignup=[...selectedSongs];
     pendingNotesForSignup=notes;
     gtag('event', 'songs_saved_guest', { songs_count: selectedSongs.filter(Boolean).length });
-    if(typeof openInstagramShareModal==='function') openInstagramShareModal();
+    openInstagramShareModal();
     return;
   }
 
@@ -2085,8 +2085,13 @@ function openShareModal(mode){
   const user=state.currentUser?state.db[state.currentUser]:null;
   let shareText,shareUrl,title,sub,dismissTxt;
   if(mode==='first'){
-    openInstagramShareModal();
-    return;
+  openInstagramShareModal();
+  return;
+    shareUrl=BASE_URL;
+    shareText='I\'ve just recorded my funeral song wishes on My Life in 3 Songs \u2014 so my loved ones will always know. You should too.';
+    title='Your songs are saved!';
+    sub='Share My Life in 3 Songs with friends and family \u2014 encourage them to record their own songs while they can.';
+    dismissTxt='Maybe later \u2014 take me to my songs';
   } else if(mode==='profile'&&user&&user.songs){
     const songList=user.songs.map((s,i)=>SLOT_LABELS[i].main+': '+(s?'"'+s.title+'" by '+s.artist:'no song selected')).join(' | ');
     shareText='My funeral songs on My Life in 3 Songs: '+songList+'. Record yours so your loved ones always know.';
@@ -2858,7 +2863,7 @@ function shareToSocialMedia(platform) {
   switch(platform) {
     case 'whatsapp':
       // WhatsApp doesn't support image sharing via URL, but we can share text
-      const whatsappText = encodeURIComponent(text);
+      const whatsappText = encodeURIComponent(text + '\n\n(Download the image from the app)');
       window.open(`https://wa.me/?text=${whatsappText}`, '_blank');
       break;
       
@@ -2969,22 +2974,27 @@ function wrapInstagramText(ctx, text, x, y, maxWidth, lineHeight) {
 //     <div class="modal-header">
 //       <div class="modal-disc">&#9834;</div>
 //       <div class="modal-title">Share Your Funeral Songs</div>
-//       <div class="modal-sub">Download and share your song choices &mdash; perfect for Instagram Stories, WhatsApp, Facebook &amp; Twitter</div>
-//    </div>
-//    <div style="border-radius:8px;overflow:hidden;background:#f5f5f5;margin-bottom:1rem">
-//      <canvas id="instagram-preview-canvas" style="display:block;width:100%;height:auto;background:#fff"></canvas>
-//    </div>
+//       <div class="modal-sub">Download and share your song choices</div>
+//     </div>
+//     <div style="border-radius:8px;overflow:hidden;background:#f5f5f5;margin-bottom:1rem">
+//       <canvas id="instagram-preview-canvas" style="display:block;width:100%;height:auto;background:#fff"></canvas>
+//     </div>
+//     <div style="font-size:12px;color:#4A5568;line-height:1.6;margin-bottom:1rem;padding:12px;background:#FAF8F5;border-radius:6px;border-left:3px solid #E8A042">
+//       <strong>📐 Perfect for:</strong> Instagram Stories, WhatsApp, Facebook, Twitter, and more
+//     </div>
+//     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem">
+//       <button onclick="downloadInstagramImage()" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">📥 Download Image</button>
+//       <button onclick="shareToSocialMedia('copy')" style="background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">🔗 Copy Link</button>
+//     </div>
 //     <div style="margin-bottom:1rem">
-//      <button onclick="downloadInstagramImage();returnToShareModal();" style="width:100%;background:#E8A042;color:#FAF8F5;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px">📥 Download Image</button>
-//    </div>
-//    <div style="margin-bottom:1rem">
-//     <div style="font-size:12px;font-weight:600;color:#1E2A4A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Share Link To:</div>
-//      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-//        <button onclick="shareToSocialMedia('whatsapp')" style="background:#25D366;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">💬 WhatsApp</button>
-//        <button onclick="shareToSocialMedia('facebook')" style="background:#1877F2;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">f Facebook</button>
-//        <button onclick="shareToSocialMedia('twitter')" style="background:#000;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">𝕏 Twitter</button>
-//      </div>
-//    </div>
+//       <div style="font-size:12px;font-weight:600;color:#1E2A4A;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">Share Link To:</div>
+//       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+//         <button onclick="shareToSocialMedia('whatsapp')" style="background:#25D366;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">💬 WhatsApp</button>
+//         <button onclick="shareToSocialMedia('facebook')" style="background:#1877F2;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">f Facebook</button>
+//         <button onclick="shareToSocialMedia('twitter')" style="background:#000;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">𝕏 Twitter</button>
+//         <button onclick="shareToSocialMedia('email')" style="background:#EA4335;color:white;border:none;padding:10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px">✉️ Email</button>
+//       </div>
+//     </div>
 //     <button onclick="closeInstagramShare()" style="width:100%;background:#E8E4DC;color:#1E2A4A;border:none;padding:12px;border-radius:6px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Close</button>
 //   </div>
 // </div>
