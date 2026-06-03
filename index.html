@@ -2858,7 +2858,7 @@ function shareToSocialMedia(platform) {
   switch(platform) {
     case 'whatsapp':
       // WhatsApp doesn't support image sharing via URL, but we can share text
-      const whatsappText = encodeURIComponent(text + '\n\n(Download the image from the app)');
+      const whatsappText = encodeURIComponent(text);
       window.open(`https://wa.me/?text=${whatsappText}`, '_blank');
       break;
       
