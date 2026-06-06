@@ -1339,23 +1339,29 @@ function buildOTP(cid){
   for(let i=0;i<6;i++){
     const inp=document.createElement('input');
     inp.type='text';inp.inputMode='numeric';inp.maxLength=1;inp.className='otp-cell';inp.autocomplete='one-time-code';
-    let isPasting=false;
     inp.addEventListener('paste',function(e){
       e.preventDefault();
-      isPasting=true;
       const digits=(e.clipboardData||window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
-      if(!digits){isPasting=false;return;}
+      if(!digits)return;
       const cells=Array.from(c.children);
       const start=cells.indexOf(this);
       digits.split('').forEach(function(d,i){if(cells[start+i])cells[start+i].value=d;});
       const next=cells[Math.min(start+digits.length,5)];
       if(next)next.focus();
-      isPasting=false;
     });
     inp.addEventListener('input',function(){
-      if(isPasting)return;
-      this.value=this.value.replace(/[^0-9]/g,'').slice(-1);
-      if(this.value&&this.nextElementSibling)this.nextElementSibling.focus();
+      const digits=this.value.replace(/[^0-9]/g,'');
+      if(digits.length>1){
+        // Multi-digit landed in one cell (can happen on mobile) — distribute it
+        const cells=Array.from(c.children);
+        const start=cells.indexOf(this);
+        digits.slice(0,6-start).split('').forEach(function(d,i){if(cells[start+i])cells[start+i].value=d;});
+        const next=cells[Math.min(start+digits.length,5)];
+        if(next)next.focus();
+      } else {
+        this.value=digits.slice(-1);
+        if(this.value&&this.nextElementSibling)this.nextElementSibling.focus();
+      }
     });
     inp.addEventListener('keydown',function(e){
       if(e.key==='Backspace'&&!this.value&&this.previousElementSibling)this.previousElementSibling.focus();
