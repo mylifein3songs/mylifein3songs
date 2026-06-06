@@ -2073,11 +2073,7 @@ async function doSave(){
   renderMyRecord();
   setEl('save-feedback','<div class="msg success">'+(isEditing?'Your songs have been updated.':'Your funeral songs are saved.')+'</div>');
   show('s-saved');
-  if(firstSave){
-    openShareModal('first');
-  } else {
-    gtag('event', 'songs_edited');
-  }
+  gtag('event', 'songs_edited');
 }
 
 // ── Share modal ────────────────────────────────────────────────────────
