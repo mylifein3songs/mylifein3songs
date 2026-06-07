@@ -1307,6 +1307,7 @@ function show(id){
   if(id==='s-stats')renderStats();
   if(id==='s-admin')renderAdmin();
   if(id==='s-landing')refreshLandingForUser();
+  if(id==='s-saved'&&state.currentUser&&state.db[state.currentUser])renderMyRecord();
   if(id==='s-lookup'){
     document.getElementById('lk-email').value='';
     document.getElementById('lk-city').value='';
