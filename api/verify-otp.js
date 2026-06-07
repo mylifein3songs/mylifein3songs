@@ -115,9 +115,13 @@ const { email, code, action, name, country, city } = req.body;
         user: user
       });
 
-    } else {
-      return res.status(400).json({ error: 'Invalid action. Must be "signup" or "login"' });
-    }
+    } else if (action === 'verify') {
+    // Just validate the code — no user lookup or creation
+    return res.status(200).json({ success: true });
+
+  } else {
+    return res.status(400).json({ error: 'Invalid action. Must be "signup", "login", or "verify"' });
+  }
 
   } catch (error) {
     console.error('Verification error:', error);
