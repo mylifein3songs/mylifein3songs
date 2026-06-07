@@ -1868,6 +1868,8 @@ async function applyDetailsSave(details,newEmail){
     
     document.getElementById('email-verify-box').style.display='none';
     document.getElementById('edit-details-box').style.display='block';
+    document.getElementById('ed-email').value=state.currentUser;
+    document.getElementById('ed-name').value=details.name;
     const ok=document.getElementById('details-saved-ok');
     ok.style.display='block';
     // Keep success message visible for a few seconds, then fade. Panel itself stays.
