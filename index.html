@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 13. 07.06 - otp update again try to make the back button not take users away from site ── -->
+<!-- ── 14. 07.06 - fix secrutiy OTp codes ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -1789,7 +1789,7 @@ function goEditDetails(){
 }
 function goEdit(){initPickScreen(true);show('s-pick');window.scrollTo({top:0,behavior:'smooth'});}
 
-let pendingEmailChange={newEmail:null,code:null,pendingDetails:null};
+let pendingEmailChange={newEmail:null,pendingDetails:null};
 
 function saveDetails(){
   clearErr('edit-details-err');
@@ -1801,13 +1801,30 @@ function saveDetails(){
   const emailChanged=newEmail!==state.currentUser;
   if(emailChanged){
     if(state.db[newEmail]){err('edit-details-err','That email address is already registered to another account.');return;}
-    const code=randCode();
-    pendingEmailChange={newEmail,code,pendingDetails:{name,country,city}};
-    buildOTP('otp-email-inputs');
-    setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>. If it hasn&rsquo;t arrived in a minute, please check your spam or junk folder.<br><em>(Demo: <strong style="letter-spacing:3px">'+code+'</strong>)</em></div>');
-    clearErr('email-verify-err');
-    document.getElementById('edit-details-box').style.display='none';
-    document.getElementById('email-verify-box').style.display='block';
+    try{
+      const saveBtn=document.querySelector('button[onclick=\"saveDetails()\"]');
+      if(saveBtn){saveBtn.disabled=true;saveBtn.textContent='Sending...';}
+      const response=await fetch('/api/send-otp',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:newEmail})
+      });
+      if(saveBtn){saveBtn.disabled=false;saveBtn.textContent='Save Changes';}
+      if(!response.ok){
+        const data=await response.json();
+        err('edit-details-err',data.error||'Failed to send verification code. Please try again.');
+        return;
+      }
+      pendingEmailChange={newEmail,pendingDetails:{name,country,city}};
+      buildOTP('otp-email-inputs');
+      setEl('email-verify-hint','<div class="msg info">A verification code has been sent to <strong>'+newEmail+'</strong>. If it hasn&rsquo;t arrived in a minute, please check your spam or junk folder.</div>');
+      clearErr('email-verify-err');
+      document.getElementById('edit-details-box').style.display='none';
+      document.getElementById('email-verify-box').style.display='block';
+    }catch(e){
+      err('edit-details-err','An error occurred. Please try again.');
+      console.error('Email change OTP error:',e);
+    }
     return;
   }
   applyDetailsSave({name,country,city},null);
@@ -1859,14 +1876,34 @@ async function applyDetailsSave(details,newEmail){
     console.error('Error in applyDetailsSave:',e);
   }
 }
-function confirmEmailChange(){
-  if(getOTP('otp-email-inputs')!==pendingEmailChange.code){
-    setEl('email-verify-err','<div class="msg error">Incorrect code. Please try again.</div>');return;
+async function confirmEmailChange(){
+  clearErr('email-verify-err');
+  const code=getOTP('otp-email-inputs');
+  if(!code||code.length!==6){
+    setEl('email-verify-err','<div class="msg error">Please enter all 6 digits.</div>');return;
   }
-  const ne=pendingEmailChange.newEmail;
-  applyDetailsSave(pendingEmailChange.pendingDetails,ne);
-  document.getElementById('ed-email').value=state.currentUser;
-  pendingEmailChange={newEmail:null,code:null,pendingDetails:null};
+  try{
+    const confirmBtn=document.querySelector('button[onclick="confirmEmailChange()"]');
+    if(confirmBtn){confirmBtn.disabled=true;confirmBtn.textContent='Verifying...';}
+    const response=await fetch('/api/verify-otp',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:pendingEmailChange.newEmail,code,action:'login'})
+    });
+    if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='Confirm & Save';}
+    if(!response.ok){
+      const data=await response.json();
+      setEl('email-verify-err','<div class="msg error">'+(data.error||'Incorrect code. Please try again.')+'</div>');
+      return;
+    }
+    const ne=pendingEmailChange.newEmail;
+    applyDetailsSave(pendingEmailChange.pendingDetails,ne);
+    document.getElementById('ed-email').value=state.currentUser;
+    pendingEmailChange={newEmail:null,pendingDetails:null};
+  }catch(e){
+    setEl('email-verify-err','<div class="msg error">An error occurred. Please try again.</div>');
+    console.error('confirmEmailChange error:',e);
+  }
 }
 function cancelEmailChange(){
   document.getElementById('email-verify-box').style.display='none';
