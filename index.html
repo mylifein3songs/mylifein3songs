@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 12. 06.06 - otp update copy paste ── -->
+<!-- ── 13. 07.06 - otp update again try to make the back button not take users away from site ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -1309,7 +1309,7 @@ function show(id){
   if(id==='s-stats')renderStats();
   if(id==='s-admin')renderAdmin();
   if(id==='s-landing')refreshLandingForUser();
-if(id==='s-lookup'){
+  if(id==='s-lookup'){
     document.getElementById('lk-email').value='';
     document.getElementById('lk-city').value='';
     document.getElementById('lk-country').value='';
@@ -1319,12 +1319,41 @@ if(id==='s-lookup'){
     populateCountrySelect('lk-country','');
     clearErr('lookup-err');
   }
-  // Persist current screen in URL path so refresh stays on same page
+  // Push history state so back button navigates within the SPA
   try{
     const path = id === 's-landing' ? '/' : '/' + id.replace(/^s-/, '');
-    history.replaceState(null,'',path);
+    const current = history.state && history.state.screen;
+    if(current !== id){
+      history.pushState({screen:id},'',path);
+    }
   }catch(e){}
 }
+
+// Handle browser back/forward
+window.addEventListener('popstate',function(e){
+  const id = e.state && e.state.screen;
+  if(id && document.getElementById(id)){
+    // Show screen without pushing another history entry
+    document.querySelectorAll('.screen.active').forEach(s=>{
+      s.querySelectorAll('iframe').forEach(f=>{f.src='about:blank';f.remove();});
+    });
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id==='s-stats')renderStats();
+    if(id==='s-admin')renderAdmin();
+    if(id==='s-landing')refreshLandingForUser();
+  }
+});
+
+// Set initial history state on page load
+(function(){
+  try{
+    const active = document.querySelector('.screen.active');
+    const id = active ? active.id : 's-landing';
+    const path = id === 's-landing' ? '/' : '/' + id.replace(/^s-/, '');
+    history.replaceState({screen:id},'',path);
+  }catch(e){}
+})();
 function setEl(id,html){document.getElementById(id).innerHTML=html;}
 function err(id,msg){setEl(id,'<div class="msg error">'+msg+'</div>');}
 function clearErr(id){setEl(id,'');}
@@ -1336,40 +1365,51 @@ function updateCharCount(){
 }
 function buildOTP(cid){
   const c=document.getElementById(cid);c.innerHTML='';
+  // Single real input overlaid on 6 visual cells — works correctly on Android
+  const wrap=document.createElement('div');
+  wrap.style.cssText='position:relative;display:flex;gap:8px;';
+  const cells=[];
   for(let i=0;i<6;i++){
-    const inp=document.createElement('input');
-    inp.type='text';inp.inputMode='numeric';inp.maxLength=1;inp.className='otp-cell';inp.autocomplete='one-time-code';
-    inp.addEventListener('paste',function(e){
-      e.preventDefault();
-      const digits=(e.clipboardData||window.clipboardData).getData('text').replace(/[^0-9]/g,'').slice(0,6);
-      if(!digits)return;
-      const cells=Array.from(c.children);
-      const start=cells.indexOf(this);
-      digits.split('').forEach(function(d,i){if(cells[start+i])cells[start+i].value=d;});
-      const next=cells[Math.min(start+digits.length,5)];
-      if(next)next.focus();
-    });
-    inp.addEventListener('input',function(){
-      const digits=this.value.replace(/[^0-9]/g,'');
-      if(digits.length>1){
-        // Multi-digit landed in one cell (can happen on mobile) — distribute it
-        const cells=Array.from(c.children);
-        const start=cells.indexOf(this);
-        digits.slice(0,6-start).split('').forEach(function(d,i){if(cells[start+i])cells[start+i].value=d;});
-        const next=cells[Math.min(start+digits.length,5)];
-        if(next)next.focus();
-      } else {
-        this.value=digits.slice(-1);
-        if(this.value&&this.nextElementSibling)this.nextElementSibling.focus();
-      }
-    });
-    inp.addEventListener('keydown',function(e){
-      if(e.key==='Backspace'&&!this.value&&this.previousElementSibling)this.previousElementSibling.focus();
-    });
-    c.appendChild(inp);
+    const cell=document.createElement('div');
+    cell.className='otp-cell';
+    cell.style.cssText='display:flex;align-items:center;justify-content:center;pointer-events:none;min-width:0;flex:1;';
+    cell.textContent='\u00A0';
+    cells.push(cell);
+    wrap.appendChild(cell);
   }
+  const real=document.createElement('input');
+  real.type='text';
+  real.inputMode='numeric';
+  real.autocomplete='one-time-code';
+  real.maxLength=6;
+  real.setAttribute('style','position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;');
+  function syncCells(){
+    const val=real.value.replace(/[^0-9]/g,'').slice(0,6);
+    if(real.value!==val)real.value=val;
+    cells.forEach(function(cell,i){
+      cell.textContent=val[i]||'\u00A0';
+    });
+    const activeIdx=Math.min(val.length,5);
+    cells.forEach(function(cell,i){
+      cell.style.borderColor=i===activeIdx&&document.activeElement===real?'var(--coral)':'';
+      cell.style.boxShadow=i===activeIdx&&document.activeElement===real?'0 0 0 2px rgba(232,115,74,0.3)':'';
+    });
+  }
+  real.addEventListener('input',syncCells);
+  real.addEventListener('focus',syncCells);
+  real.addEventListener('blur',function(){
+    cells.forEach(function(cell){cell.style.borderColor='';cell.style.boxShadow='';});
+  });
+  wrap.addEventListener('click',function(){real.focus();});
+  wrap.appendChild(real);
+  c.appendChild(wrap);
 }
-function getOTP(cid){return Array.from(document.getElementById(cid).children).map(i=>i.value).join('');}
+function getOTP(cid){
+  const c=document.getElementById(cid);
+  const inp=c.querySelector('input');
+  if(inp)return inp.value;
+  return Array.from(c.children).map(i=>i.value).join('');
+}
 // ── DOB text-entry helpers ───────────────────────────────────────────────
 // We replaced the native <input type="date"> pickers (the scrolling calendar
 // wheel that mobile users disliked) with plain text inputs that auto-insert
