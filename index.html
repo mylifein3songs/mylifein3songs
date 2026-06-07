@@ -1791,7 +1791,7 @@ function goEdit(){initPickScreen(true);show('s-pick');window.scrollTo({top:0,beh
 
 let pendingEmailChange={newEmail:null,pendingDetails:null};
 
-function saveDetails(){
+async function saveDetails(){
   clearErr('edit-details-err');
   const name=document.getElementById('ed-name').value.trim();
   const newEmail=document.getElementById('ed-email').value.trim().toLowerCase();
