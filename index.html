@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="My Life in 3 Songs">
-<!-- ── 17. 07.06 - makes preveiws appear when going back on your songs  ── -->
+<!-- ── 18. 07.06 - stopped loading the whole supabase table of useers  ── -->
 <!-- ── Primary SEO ── -->
 <title>My Life in 3 Songs — Record Your Funeral Song Wishes</title>
 <meta name="description" content="Don't leave your loved ones guessing. My Life in 3 Songs lets you record the three songs you want played at your funeral — Entrance Music, Reflection Music, and Exit Music — so the people who matter most will always know.">
@@ -1227,28 +1227,26 @@ async function loadState(){
     console.error('Error loading session:',e);
   }
   
-  // Load all users from Supabase into state.db
-  if(window.supabase_client){
+  // Load only the current user's record from Supabase
+  if(window.supabase_client&&state.currentUser){
     try{
-      const {data,error}=await window.supabase_client.from('users').select('*');
+      const {data,error}=await window.supabase_client.from('users').select('*').eq('email',state.currentUser).single();
       if(error)throw error;
       state.db={};
       if(data){
-        data.forEach(user=>{
-          state.db[user.email]={
-            name:user.name,
-            dob:user.dob,
-            country:user.country,
-            city:user.city||'',
-            songs:user.songs||null,
-            notes:user.notes||'',
-            views:user.views||0,
-            lastLogin:user.last_login?new Date(user.last_login).getTime():0
-          };
-        });
+        state.db[data.email]={
+          name:data.name,
+          dob:data.dob,
+          country:data.country,
+          city:data.city||'',
+          songs:data.songs||null,
+          notes:data.notes||'',
+          views:data.views||0,
+          lastLogin:data.last_login?new Date(data.last_login).getTime():0
+        };
       }
     }catch(e){
-      console.error('Failed to load users from Supabase:',e);
+      console.error('Failed to load user from Supabase:',e);
     }
   }
 }
@@ -2544,7 +2542,17 @@ async function renderStats(){
 }
 
 // ── Admin ──────────────────────────────────────────────────────────────
-function renderAdmin(){
+async function renderAdmin(){
+  setEl('admin-list','<p class="no-data">Loading…</p>');
+  try{
+    const {data,error}=await window.supabase_client.from('users').select('*');
+    if(error)throw error;
+    if(data)data.forEach(u=>{if(u.email)state.db[u.email]={name:u.name,dob:u.dob,country:u.country,city:u.city||'',songs:u.songs||null,notes:u.notes||'',views:u.views||0,lastLogin:u.last_login?new Date(u.last_login).getTime():0};});
+  }catch(e){
+    setEl('admin-list','<p class="no-data">Failed to load users.</p>');
+    console.error('Admin load error:',e);
+    return;
+  }
   const users=Object.entries(state.db);
   if(!users.length){setEl('admin-list','<p class="no-data">No registered users yet.</p>');return;}
   const html=users.map(([email,u])=>{
